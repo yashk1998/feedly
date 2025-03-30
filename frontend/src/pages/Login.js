@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Link,
-  Alert,
-  Paper,
-} from '@mui/material';
+import { Container, Box, Typography, TextField, Button, Link, Alert, Paper } from '@mui/material';
 import { useStore } from '../store';
 
 const Login = () => {
@@ -20,7 +11,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -78,7 +69,7 @@ const Login = () => {
               autoComplete="email"
               autoFocus
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
             />
             <TextField
               margin="normal"
@@ -90,7 +81,7 @@ const Login = () => {
               id="password"
               autoComplete="current-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
             />
             <Button
               type="submit"
@@ -113,4 +104,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

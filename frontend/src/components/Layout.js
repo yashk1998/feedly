@@ -26,12 +26,10 @@ const Layout = ({ children }) => {
           backgroundColor: theme.palette.background.default,
         }}
       >
-        <Container maxWidth="lg">
-          {children}
-        </Container>
+        <Container maxWidth="lg">{children}</Container>
       </Box>
     </Box>
   );
 };
 
-export default Layout; 
+export default Layout;

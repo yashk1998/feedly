@@ -26,7 +26,7 @@ const feedSchema = new mongoose.Schema({
   }],
   category: {
     type: String,
-    default: 'Uncategorized'
+    default: 'FEEDS'
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,

@@ -51,7 +51,7 @@ export const useStore = create((set, get) => ({
     try {
       set({ loading: true });
       const response = await axios.get(`${API_URL}/feeds`, {
-        headers: { Authorization: `Bearer ${get().token}` }
+        headers: { Authorization: `Bearer ${get().token}` },
       });
       set({ feeds: response.data });
     } catch (error) {
@@ -61,12 +61,16 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  addFeed: async (url) => {
+  addFeed: async url => {
     if (!get().token) return false;
     try {
-      const response = await axios.post(`${API_URL}/feeds`, { url }, {
-        headers: { Authorization: `Bearer ${get().token}` }
-      });
+      const response = await axios.post(
+        `${API_URL}/feeds`,
+        { url },
+        {
+          headers: { Authorization: `Bearer ${get().token}` },
+        }
+      );
       set(state => ({ feeds: [...state.feeds, response.data] }));
       return true;
     } catch (error) {
@@ -77,20 +81,14 @@ export const useStore = create((set, get) => ({
 
   updateFeedItem: async (feedId, itemId, updates) => {
     if (!get().token) return false;
-    
+
     try {
-      const response = await axios.patch(
-        `${API_URL}/feeds/${feedId}/items/${itemId}`,
-        updates,
-        {
-          headers: { Authorization: `Bearer ${get().token}` }
-        }
-      );
-      
+      const response = await axios.patch(`${API_URL}/feeds/${feedId}/items/${itemId}`, updates, {
+        headers: { Authorization: `Bearer ${get().token}` },
+      });
+
       set(state => ({
-        feeds: state.feeds.map(feed =>
-          feed._id === feedId ? response.data : feed
-        )
+        feeds: state.feeds.map(feed => (feed._id === feedId ? response.data : feed)),
       }));
       return true;
     } catch (error) {
@@ -99,14 +97,14 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  deleteFeed: async (feedId) => {
+  deleteFeed: async feedId => {
     if (!get().token) return false;
     try {
       await axios.delete(`${API_URL}/feeds/${feedId}`, {
-        headers: { Authorization: `Bearer ${get().token}` }
+        headers: { Authorization: `Bearer ${get().token}` },
       });
       set(state => ({
-        feeds: state.feeds.filter(feed => feed._id !== feedId)
+        feeds: state.feeds.filter(feed => feed._id !== feedId),
       }));
       return true;
     } catch (error) {
@@ -124,16 +122,16 @@ export const useStore = create((set, get) => ({
     });
   },
 
-  setViewMode: (mode) => {
+  setViewMode: mode => {
     localStorage.setItem('viewMode', mode);
     set({ viewMode: mode });
   },
 
-  setSelectedFeed: (feed) => {
+  setSelectedFeed: feed => {
     set({ selectedFeed: feed });
   },
 
   clearError: () => {
     set({ error: null });
-  }
-})); 
+  },
+}));

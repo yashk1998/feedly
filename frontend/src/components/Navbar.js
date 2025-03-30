@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
-  Box,
-} from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Box } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -15,7 +9,7 @@ const Navbar = ({ onMenuClick }) => {
   const { toggleTheme, theme: currentTheme } = useStore();
 
   return (
-    <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+    <AppBar position="fixed" sx={{ zIndex: theme => theme.zIndex.drawer + 1 }}>
       <Toolbar>
         <IconButton
           color="inherit"
@@ -39,4 +33,4 @@ const Navbar = ({ onMenuClick }) => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

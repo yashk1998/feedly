@@ -3,77 +3,109 @@ import {
   Drawer,
   List,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
-  ListItemButton,
+  ListSubheader,
+  Toolbar,
   Divider,
   Box,
-  Typography,
+  Collapse,
 } from '@mui/material';
-import {
-  Dashboard as DashboardIcon,
-  Article as ArticleIcon,
-  Settings as SettingsIcon,
-  Category as CategoryIcon,
-} from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { RssFeed, Today, Bookmark, Category, ExpandLess, ExpandMore } from '@mui/icons-material';
 import { useStore } from '../store';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../constants';
+import { getCategories, groupFeedsByCategory } from '../utils/feedUtils';
 
-const drawerWidth = 240;
-
-const Sidebar = ({ mobileOpen, onClose }) => {
+const Sidebar = ({ drawerWidth, mobileOpen, handleDrawerToggle }) => {
+  const feeds = useStore(state => state.feeds);
+  const categories = getCategories(feeds);
+  const feedsByCategory = groupFeedsByCategory(feeds);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { feeds } = useStore();
+  const [openCategories, setOpenCategories] = React.useState({});
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'All Feeds', icon: <ArticleIcon />, path: '/feeds' },
-    { text: 'Categories', icon: <CategoryIcon />, path: '/categories' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-  ];
+  const handleCategoryClick = category => {
+    setOpenCategories(prev => ({ ...prev, [category]: !prev[category] }));
+  };
 
-  const drawer = (
+  const handleFeedClick = feedId => {
+    navigate(ROUTES.FEED.replace(':feedId', feedId));
+    if (mobileOpen) {
+      handleDrawerToggle();
+    }
+  };
+
+  const handleNavigation = route => {
+    navigate(route);
+    if (mobileOpen) {
+      handleDrawerToggle();
+    }
+  };
+
+  const drawerContent = (
     <Box>
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" noWrap>
-          RSS Reader
-        </Typography>
-      </Box>
-      <Divider />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              selected={location.pathname === item.path}
-              onClick={() => {
-                navigate(item.path);
-                onClose();
-              }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+      <Toolbar />
+      <List
+        subheader={
+          <ListSubheader component="div" sx={{ bgcolor: 'background.paper' }}> 
+            Navigation
+          </ListSubheader>
+        }
+      >
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleNavigation(ROUTES.TODAY)}>
+            <ListItemIcon>
+              <Today />
+            </ListItemIcon>
+            <ListItemText primary="Today" />
+          </ListItemButton>
+        </ListItem>
+
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleNavigation(ROUTES.SAVED)}>
+            <ListItemIcon>
+              <Bookmark />
+            </ListItemIcon>
+            <ListItemText primary="Read Later" />
+          </ListItemButton>
+        </ListItem>
       </List>
       <Divider />
-      <List>
-        {feeds.map((feed) => (
-          <ListItem key={feed._id} disablePadding>
-            <ListItemButton
-              selected={location.pathname === `/feed/${feed._id}`}
-              onClick={() => {
-                navigate(`/feed/${feed._id}`);
-                onClose();
-              }}
-            >
+
+      <List
+        subheader={
+          <ListSubheader component="div" sx={{ bgcolor: 'background.paper' }}> 
+            Your Feeds
+          </ListSubheader>
+        }
+      >
+        {categories.map(category => (
+          <React.Fragment key={category}>
+            <ListItemButton onClick={() => handleCategoryClick(category)}>
               <ListItemIcon>
-                <ArticleIcon />
+                <Category fontSize="small" />
               </ListItemIcon>
-              <ListItemText primary={feed.title} />
+              <ListItemText primary={category} />
+              {openCategories[category] ? <ExpandLess /> : <ExpandMore />}
             </ListItemButton>
-          </ListItem>
+            <Collapse in={openCategories[category]} timeout="auto" unmountOnExit>
+              <List component="div" disablePadding>
+                {feedsByCategory[category]?.map(feed => (
+                  <ListItemButton
+                    key={feed._id}
+                    sx={{ pl: 4 }}
+                    onClick={() => handleFeedClick(feed._id)}
+                  >
+                    <ListItemIcon>
+                      <RssFeed fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText primary={feed.title} />
+                  </ListItemButton>
+                ))}
+              </List>
+            </Collapse>
+          </React.Fragment>
         ))}
       </List>
     </Box>
@@ -83,39 +115,35 @@ const Sidebar = ({ mobileOpen, onClose }) => {
     <Box
       component="nav"
       sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+      aria-label="mailbox folders"
     >
       <Drawer
         variant="temporary"
         open={mobileOpen}
-        onClose={onClose}
+        onClose={handleDrawerToggle}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
+          keepMounted: true,
         }}
         sx={{
           display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': {
-            boxSizing: 'border-box',
-            width: drawerWidth,
-          },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
         }}
       >
-        {drawer}
+        {drawerContent}
       </Drawer>
+
       <Drawer
         variant="permanent"
         sx={{
           display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': {
-            boxSizing: 'border-box',
-            width: drawerWidth,
-          },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
         }}
         open
       >
-        {drawer}
+        {drawerContent}
       </Drawer>
     </Box>
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

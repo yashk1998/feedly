@@ -23,14 +23,14 @@ const FeedList = ({ feeds }) => {
   const { deleteFeed, setSelectedFeed } = useStore();
   const [openCategories, setOpenCategories] = React.useState({});
 
-  const handleCategoryClick = (category) => {
+  const handleCategoryClick = category => {
     setOpenCategories(prev => ({
       ...prev,
-      [category]: !prev[category]
+      [category]: !prev[category],
     }));
   };
 
-  const handleFeedClick = (feed) => {
+  const handleFeedClick = feed => {
     setSelectedFeed(feed);
     navigate(`/feed/${feed._id}`);
   };
@@ -44,7 +44,7 @@ const FeedList = ({ feeds }) => {
 
   // Group feeds by category
   const feedsByCategory = feeds.reduce((acc, feed) => {
-    const category = feed.category || 'Uncategorized';
+    const category = feed.category || 'FEEDS';
     if (!acc[category]) {
       acc[category] = [];
     }
@@ -62,7 +62,9 @@ const FeedList = ({ feeds }) => {
             </ListItemIcon>
             <ListItemText
               primary={
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                >
                   <Typography variant="subtitle1">
                     {category} ({categoryFeeds.length})
                   </Typography>
@@ -73,22 +75,15 @@ const FeedList = ({ feeds }) => {
           </ListItem>
           <Collapse in={openCategories[category]} timeout="auto" unmountOnExit>
             <List component="div" disablePadding>
-              {categoryFeeds.map((feed) => (
+              {categoryFeeds.map(feed => (
                 <ListItem
                   key={feed._id}
                   button
                   sx={{ pl: 4 }}
                   onClick={() => handleFeedClick(feed)}
                 >
-                  <ListItemText
-                    primary={feed.title}
-                    secondary={`${feed.items.length} items`}
-                  />
-                  <IconButton
-                    edge="end"
-                    size="small"
-                    onClick={(e) => handleDeleteFeed(e, feed._id)}
-                  >
+                  <ListItemText primary={feed.title} secondary={`${feed.items.length} items`} />
+                  <IconButton edge="end" size="small" onClick={e => handleDeleteFeed(e, feed._id)}>
                     <DeleteIcon />
                   </IconButton>
                 </ListItem>
@@ -101,4 +96,4 @@ const FeedList = ({ feeds }) => {
   );
 };
 
-export default FeedList; 
+export default FeedList;

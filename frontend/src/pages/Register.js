@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Link,
-  Alert,
-  Paper,
-} from '@mui/material';
+import { Container, Box, Typography, TextField, Button, Link, Alert, Paper } from '@mui/material';
 import { useStore } from '../store';
 
 const Register = () => {
@@ -22,7 +13,7 @@ const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError('');
 
@@ -86,7 +77,7 @@ const Register = () => {
               autoComplete="name"
               autoFocus
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
             />
             <TextField
               margin="normal"
@@ -97,7 +88,7 @@ const Register = () => {
               name="email"
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
             />
             <TextField
               margin="normal"
@@ -109,7 +100,7 @@ const Register = () => {
               id="password"
               autoComplete="new-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
             />
             <TextField
               margin="normal"
@@ -120,7 +111,7 @@ const Register = () => {
               type="password"
               id="confirmPassword"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={e => setConfirmPassword(e.target.value)}
             />
             <Button
               type="submit"
@@ -143,4 +134,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;

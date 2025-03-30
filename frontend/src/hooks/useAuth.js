@@ -32,7 +32,7 @@ export const useAuth = () => {
     }
   };
 
-  const login = async (credentials) => {
+  const login = async credentials => {
     try {
       setError(null);
       const response = await authAPI.login(credentials);
@@ -46,7 +46,7 @@ export const useAuth = () => {
     }
   };
 
-  const register = async (userData) => {
+  const register = async userData => {
     try {
       setError(null);
       const response = await authAPI.register(userData);
@@ -78,4 +78,4 @@ export const useAuth = () => {
     register,
     logout,
   };
-}; 
+};

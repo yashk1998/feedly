@@ -31,6 +31,7 @@ graph TD
 rss-reader/
 ├── frontend/                 # React frontend application
 │   ├── public/              # Static files
+│   ├── src/
 │   │   ├── components/      # Reusable UI components
 │   │   ├── pages/          # Page components
 │   │   ├── store/          # Zustand store
@@ -51,7 +52,7 @@ rss-reader/
 │   │   └── server.js       # Application entry point
 │   └── package.json
 │
-└── docs/                   # Project documentation
+└── package.json            # Root package.json for workspace management
 ```
 
 ## Features
@@ -101,39 +102,75 @@ git clone <repository-url>
 cd rss-reader
 ```
 
-2. Install backend dependencies:
+2. Install dependencies:
 ```bash
-cd backend
 npm install
 ```
 
-3. Install frontend dependencies:
-```bash
-cd ../frontend
-npm install
-```
-
-4. Set up environment variables:
+3. Set up environment variables:
 - Copy `.env.example` to `.env` in both frontend and backend directories
 - Update the variables with your values
 
 ## Running the Application
 
-1. Start the backend server:
+### Development Mode
+
+1. Start both frontend and backend concurrently:
 ```bash
-cd backend
-npm run dev
+npm start
 ```
 
-2. Start the frontend development server:
+Or start them separately:
 ```bash
-cd frontend
+# Start backend
+npm run start:backend
+
+# Start frontend
+npm run start:frontend
+```
+
+### Production Mode
+
+1. Build the frontend:
+```bash
+npm run build
+```
+
+2. Start the backend:
+```bash
+cd backend
 npm start
 ```
 
 The application will be available at:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
+
+## Available Scripts
+
+### Root Level
+- `npm start` - Start both frontend and backend in development mode
+- `npm run build` - Build the frontend for production
+- `npm test` - Run tests for both frontend and backend
+- `npm run lint` - Run ESLint on all files
+- `npm run lint:fix` - Fix ESLint issues
+- `npm run format` - Format code with Prettier
+
+### Frontend
+- `npm run start` - Start development server
+- `npm run build` - Build for production
+- `npm test` - Run tests
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint issues
+- `npm run format` - Format code with Prettier
+
+### Backend
+- `npm run start` - Start production server
+- `npm run dev` - Start development server with nodemon
+- `npm test` - Run tests
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint issues
+- `npm run format` - Format code with Prettier
 
 ## API Documentation
 

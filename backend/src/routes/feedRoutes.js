@@ -1,29 +1,26 @@
 const express = require('express');
-const { auth } = require('../middleware/auth');
-const {
-  getAllFeeds,
-  getFeed,
-  addFeed,
-  updateFeed,
-  deleteFeed,
-  updateFeedItem,
-  bookmarkItem
-} = require('../controllers/feedController');
-
 const router = express.Router();
+const { body } = require('express-validator');
+const feedController = require('../controllers/feedController');
+const { validateRequest } = require('../middleware/validator');
+const { authenticate } = require('../middleware/auth');
 
-// Apply auth middleware to all routes
-router.use(auth);
+// Validation middleware
+const feedValidation = [
+  body('url').isURL().withMessage('Please enter a valid URL'),
+  body('title').optional().trim().notEmpty().withMessage('Title cannot be empty'),
+  body('description').optional().trim(),
+  body('category').optional().trim()
+];
 
-// Feed routes
-router.get('/', getAllFeeds);
-router.get('/:feedId', getFeed);
-router.post('/', addFeed);
-router.put('/:feedId', updateFeed);
-router.delete('/:feedId', deleteFeed);
+// Routes
+router.use(authenticate); // Protect all feed routes
 
-// Feed item routes
-router.put('/:feedId/items/:itemId', updateFeedItem);
-router.post('/:feedId/items/:itemId/bookmark', bookmarkItem);
+router.get('/', feedController.getAllFeeds);
+router.post('/', feedValidation, validateRequest, feedController.addFeed);
+router.get('/:id', feedController.getFeedById);
+router.put('/:id', feedValidation, validateRequest, feedController.updateFeedById);
+router.delete('/:id', feedController.deleteFeed);
+router.put('/:id/items/:itemId', feedController.updateFeedItem);
 
 module.exports = router; 

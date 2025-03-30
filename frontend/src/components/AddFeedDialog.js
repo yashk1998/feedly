@@ -18,7 +18,7 @@ const AddFeedDialog = ({ open, onClose }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -52,7 +52,7 @@ const AddFeedDialog = ({ open, onClose }) => {
               type="url"
               fullWidth
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={e => setUrl(e.target.value)}
               required
               error={!!error}
               helperText={error}
@@ -62,7 +62,7 @@ const AddFeedDialog = ({ open, onClose }) => {
               label="Category (optional)"
               fullWidth
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={e => setCategory(e.target.value)}
             />
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
               Example feeds:
@@ -76,12 +76,7 @@ const AddFeedDialog = ({ open, onClose }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
-            disabled={loading || !url}
-          >
+          <Button type="submit" variant="contained" color="primary" disabled={loading || !url}>
             {loading ? 'Adding...' : 'Add Feed'}
           </Button>
         </DialogActions>
@@ -90,4 +85,4 @@ const AddFeedDialog = ({ open, onClose }) => {
   );
 };
 
-export default AddFeedDialog; 
+export default AddFeedDialog;

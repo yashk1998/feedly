@@ -1,64 +1,55 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Use Vite environment variable
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const api = axios.create({
+const apiClient = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
-// Request interceptor for adding auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
+// Request interceptor to add the auth token
+apiClient.interceptors.request.use(
+  config => {
+    // Example: Get token from Zustand store or local storage
+    // This needs access to your store logic, or pass token differently
+    const token = localStorage.getItem('token'); // Simplified example
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
+  error => {
     return Promise.reject(error);
   }
 );
 
-// Response interceptor for handling errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
+// Response interceptor (optional, for global error handling)
+apiClient.interceptors.response.use(
+  response => response,
+  error => {
+    // Handle errors globally if needed (e.g., 401 unauthorized)
+    // console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
 );
 
-export const authAPI = {
-  login: (credentials) => api.post('/api/auth/login', credentials),
-  register: (userData) => api.post('/api/auth/register', userData),
-  logout: () => api.post('/api/auth/logout'),
-  getCurrentUser: () => api.get('/api/auth/me'),
-};
+// Authentication
+export const loginUser = credentials => apiClient.post('/auth/login', credentials);
+export const registerUser = userData => apiClient.post('/auth/register', userData);
+export const getCurrentUser = () => apiClient.get('/auth/me');
 
-export const feedAPI = {
-  getAllFeeds: () => api.get('/api/feeds'),
-  getFeed: (feedId) => api.get(`/api/feeds/${feedId}`),
-  addFeed: (feedUrl) => api.post('/api/feeds', { url: feedUrl }),
-  updateFeed: (feedId, data) => api.put(`/api/feeds/${feedId}`, data),
-  deleteFeed: (feedId) => api.delete(`/api/feeds/${feedId}`),
-  getFeedItems: (feedId) => api.get(`/api/feeds/${feedId}/items`),
-  updateFeedItem: (feedId, itemId, data) =>
-    api.put(`/api/feeds/${feedId}/items/${itemId}`, data),
-  bookmarkItem: (feedId, itemId) =>
-    api.post(`/api/feeds/${feedId}/items/${itemId}/bookmark`),
-};
+// Feeds
+export const fetchAllFeeds = () => apiClient.get('/feeds');
+export const fetchFeedById = feedId => apiClient.get(`/feeds/${feedId}`);
+export const addNewFeed = feedUrl => apiClient.post('/feeds', { url: feedUrl });
+export const removeFeed = feedId => apiClient.delete(`/feeds/${feedId}`);
+export const updateExistingFeed = (feedId, updates) => apiClient.put(`/feeds/${feedId}`, updates);
+export const updateFeedItemStatus = (feedId, itemId, updates) =>
+  apiClient.put(`/feeds/${feedId}/items/${itemId}`, updates);
 
-export const userAPI = {
-  updatePreferences: (preferences) =>
-    api.put('/api/users/preferences', preferences),
-  getPreferences: () => api.get('/api/users/preferences'),
-};
+// User Preferences
+export const fetchUserPreferences = () => apiClient.get('/users/preferences');
+export const updateUserPreferences = preferences =>
+  apiClient.put('/users/preferences', preferences);
 
-export default api; 
+export default apiClient;

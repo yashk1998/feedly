@@ -1,183 +1,140 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+  Box,
+  Typography,
+  CircularProgress,
+  Alert,
   Grid,
   Card,
   CardContent,
-  Typography,
-  Box,
-  Button,
-  CircularProgress,
-  Alert,
   CardMedia,
   CardActions,
+  Button,
   Chip,
   Paper,
-  Tabs,
-  Tab,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { OpenInNew as OpenInNewIcon } from '@mui/icons-material';
-import { useFeeds } from '../hooks/useFeeds';
-import { useAuth } from '../hooks/useAuth';
+import { Add as AddIcon, OpenInNew, BookmarkAdd, BookmarkRemove } from '@mui/icons-material';
+import { useStore } from '../store';
 import AddFeedDialog from '../components/AddFeedDialog';
-import { POPULAR_FEEDS, ROUTES } from '../constants';
-import { truncateText, calculateFeedStats } from '../utils/feedUtils';
+import { POPULAR_FEEDS } from '../constants';
+import { extractImageFromContent, formatPublishedDate } from '../utils/feedUtils';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { feeds, loading, error, addFeed } = useFeeds();
-  const { user } = useAuth();
-  const [openAddFeed, setOpenAddFeed] = React.useState(false);
-  const [selectedTab, setSelectedTab] = React.useState(0);
+  const {
+    feeds,
+    addFeed,
+    fetchFeeds,
+    loading: storeLoading,
+    error: storeError,
+    token,
+  } = useStore();
 
-  const handleAddFeed = async (url) => {
-    const success = await addFeed(url);
-    if (success) {
+  const [openAddFeed, setOpenAddFeed] = useState(false);
+  const [displayFeeds, setDisplayFeeds] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (token) {
+      fetchFeeds();
+    } else {
+      setDisplayFeeds(POPULAR_FEEDS.map(f => ({ ...f, isPopular: true })));
+    }
+  }, [token, fetchFeeds]);
+
+  useEffect(() => {
+    if (token && feeds.length > 0) {
+      setDisplayFeeds(POPULAR_FEEDS.map(f => ({ ...f, isPopular: true })));
+    } else if (!token) {
+      setDisplayFeeds(POPULAR_FEEDS.map(f => ({ ...f, isPopular: true })));
+    }
+    setIsLoading(storeLoading);
+    setError(storeError);
+  }, [feeds, token, storeLoading, storeError]);
+
+  const handleAddFeed = async url => {
+    try {
+      await addFeed(url);
       setOpenAddFeed(false);
+    } catch (err) {
+      console.error('Failed to add feed:', err);
     }
   };
 
-  const handleTabChange = (event, newValue) => {
-    setSelectedTab(newValue);
-  };
-
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box p={3}>
-        <Alert severity="error">{error}</Alert>
-      </Box>
-    );
-  }
-
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Welcome, {user?.name || 'User'}
-        </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => setOpenAddFeed(true)}
-        >
-          Add Feed
-        </Button>
-      </Box>
-
-      <Paper sx={{ mb: 3 }}>
-        <Tabs value={selectedTab} onChange={handleTabChange} centered>
-          <Tab label="Your Feeds" />
-          <Tab label="Popular Feeds" />
-        </Tabs>
+      <Paper
+        sx={{
+          p: 2,
+          mb: 3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Typography variant="h5">Discover Feeds</Typography>
+        {token && (
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            onClick={() => setOpenAddFeed(true)}
+          >
+            Add Feed
+          </Button>
+        )}
       </Paper>
 
-      {selectedTab === 0 ? (
-        <Grid container spacing={3}>
-          {feeds.map((feed) => {
-            const stats = calculateFeedStats(feed);
-            return (
-              <Grid item xs={12} md={6} lg={4} key={feed._id}>
-                <Card 
-                  sx={{ 
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      boxShadow: 6,
-                    }
-                  }}
-                >
-                  {feed.image && (
-                    <CardMedia
-                      component="img"
-                      height="140"
-                      image={feed.image}
-                      alt={feed.title}
-                    />
-                  )}
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography gutterBottom variant="h6" component="h2">
-                      {feed.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {truncateText(feed.description)}
-                    </Typography>
-                    <Box display="flex" gap={1} mb={2}>
-                      <Chip label={feed.category || 'Uncategorized'} size="small" />
-                      <Chip 
-                        label={`${stats.unread} unread`} 
-                        size="small" 
-                        variant="outlined" 
-                        color={stats.unread > 0 ? 'primary' : 'default'}
-                      />
-                    </Box>
-                  </CardContent>
-                  <CardActions>
-                    <Button 
-                      size="small" 
-                      onClick={() => navigate(ROUTES.FEED.replace(':feedId', feed._id))}
-                      endIcon={<OpenInNewIcon />}
-                    >
-                      View Feed
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      ) : (
-        <Grid container spacing={3}>
-          {POPULAR_FEEDS.map((feed) => (
-            <Grid item xs={12} md={6} lg={4} key={feed.url}>
-              <Card 
-                sx={{ 
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  '&:hover': {
-                    boxShadow: 6,
-                  }
-                }}
-              >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Typography gutterBottom variant="h6" component="h2">
-                    {feed.title}
-                  </Typography>
-                  <Box display="flex" gap={1} mb={2}>
-                    <Chip label={feed.category} size="small" />
-                  </Box>
-                </CardContent>
-                <CardActions>
-                  <Button 
-                    size="small" 
-                    onClick={() => handleAddFeed(feed.url)}
-                    endIcon={<OpenInNewIcon />}
-                  >
-                    Add Feed
-                  </Button>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+      {isLoading && (
+        <Box display="flex" justifyContent="center" my={5}>
+          <CircularProgress />
+        </Box>
       )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Grid container spacing={3}>
+        {displayFeeds.map(feed => (
+          <Grid item xs={12} sm={6} md={4} key={feed.url}>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Typography gutterBottom variant="h6" component="div">
+                  {feed.title}
+                </Typography>
+                <Chip label={feed.category || 'Unknown'} size="small" sx={{ mb: 1 }} />
+                <Typography variant="body2" color="text.secondary">
+                  {feed.description || 'Popular feed suggestion.'}
+                </Typography>
+              </CardContent>
+              <CardActions>
+                {token && (
+                  <Tooltip title="Add this feed to your list">
+                    <IconButton size="small" onClick={() => handleAddFeed(feed.url)}>
+                      <BookmarkAdd />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Button size="small" href={feed.url} target="_blank" startIcon={<OpenInNew />}>
+                  Visit
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
       <AddFeedDialog
         open={openAddFeed}
         onClose={() => setOpenAddFeed(false)}
-        onAdd={handleAddFeed}
+        onAddFeed={handleAddFeed}
       />
     </Box>
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

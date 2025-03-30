@@ -26,7 +26,7 @@ import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ShareIcon from '@mui/icons-material/Share';
 import { ROUTES } from '../constants';
-import { formatDate, truncateText, extractImageFromContent } from '../utils/feedUtils';
+import { formatPublishedDate, extractImageFromContent } from '../utils/feedUtils';
 
 const FeedView = () => {
   const { feedId } = useParams();
@@ -43,7 +43,7 @@ const FeedView = () => {
     await updateFeedItem(feedId, itemId, { isBookmarked: !isBookmarked });
   };
 
-  const handleShare = async (item) => {
+  const handleShare = async item => {
     if (navigator.share) {
       try {
         await navigator.share({
@@ -91,36 +91,25 @@ const FeedView = () => {
           {feed.description}
         </Typography>
         <Box display="flex" gap={1}>
-          <Chip label={feed.category || 'Uncategorized'} size="small" />
-          <Chip 
-            label={`${feed.items?.length || 0} items`} 
-            size="small" 
-            variant="outlined" 
-          />
+          <Chip label={feed.category || 'FEEDS'} size="small" />
+          <Chip label={`${feed.items?.length || 0} items`} size="small" variant="outlined" />
         </Box>
       </Paper>
 
       <Grid container spacing={3}>
-        {feed.items?.map((item) => {
+        {feed.items?.map(item => {
           const image = item.image || extractImageFromContent(item.content);
           return (
             <Grid item xs={12} key={item.link}>
-              <Card 
-                sx={{ 
+              <Card
+                sx={{
                   mb: 2,
                   '&:hover': {
                     boxShadow: 6,
-                  }
+                  },
                 }}
               >
-                {image && (
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    image={image}
-                    alt={item.title}
-                  />
-                )}
+                {image && <CardMedia component="img" height="200" image={image} alt={item.title} />}
                 <CardContent>
                   <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
                     <Typography variant="h6" component="h2">
@@ -133,16 +122,13 @@ const FeedView = () => {
                       >
                         {item.isBookmarked ? <BookmarkIcon /> : <BookmarkBorderIcon />}
                       </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleShare(item)}
-                      >
+                      <IconButton size="small" onClick={() => handleShare(item)}>
                         <ShareIcon />
                       </IconButton>
                     </Box>
                   </Box>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {formatDate(item.published)}
+                    {formatPublishedDate(item.published)}
                   </Typography>
                   <Typography
                     variant="body1"
@@ -155,7 +141,8 @@ const FeedView = () => {
                       overflow: 'hidden',
                     }}
                   >
-                    {truncateText(item.description)}
+                    {item.description?.substring(0, 200)}
+                    {item.description?.length > 200 ? '...' : ''}
                   </Typography>
                 </CardContent>
                 <CardActions>
@@ -176,4 +163,4 @@ const FeedView = () => {
   );
 };
 
-export default FeedView; 
+export default FeedView;

@@ -1,52 +1,63 @@
-import { parse } from 'rss-parser';
+import { formatDistanceToNow } from 'date-fns';
 
-export const validateFeedUrl = (url) => {
+// This function is likely unnecessary now as parsing happens backend.
+// Keeping it commented out for reference in case similar logic is needed for display.
+// const parseFeed = async (url) => {
+//   // Removed rss-parser logic
+//   // This should be fetched from the backend API instead
+//   console.error("parseFeed should not be called on the frontend.");
+//   return null;
+// };
+
+// This function might need adjustment based on the actual data structure from the backend API
+const transformFeedData = feedData => {
+  if (!feedData || !feedData.items) {
+    return { ...feedData, items: [] };
+  }
+  return {
+    ...feedData,
+    items: feedData.items.map(item => ({
+      ...item,
+      publishedDate: item.published
+        ? formatDistanceToNow(new Date(item.published), { addSuffix: true })
+        : 'No date',
+      // Image extraction might already be done by the backend service
+      imageUrl: item.image || extractImageFromContent(item.content || item.description),
+    })),
+  };
+};
+
+const formatPublishedDate = date => {
+  if (!date) return 'No date';
   try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
+    return formatDistanceToNow(new Date(date), { addSuffix: true });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
   }
 };
 
-export const extractFeedData = (feedData) => {
-  const parser = new parse();
-  return parser.parseString(feedData);
-};
-
-export const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-export const truncateText = (text, maxLength = 150) => {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
-};
-
-export const extractImageFromContent = (content) => {
+// Simple image extraction from HTML content (might still be useful)
+const extractImageFromContent = content => {
   if (!content) return null;
-  
-  // Try to find an img tag
+  // Match img tags
   const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
-  if (imgMatch) return imgMatch[1];
-  
-  // Try to find a background image
-  const bgMatch = content.match(/background-image:\s*url\(['"]?([^'"\)]+)['"]?\)/);
-  if (bgMatch) return bgMatch[1];
-  
+  if (imgMatch && imgMatch[1]) {
+    return imgMatch[1];
+  }
+  // Simple regex for URLs ending in common image formats within the content
+  // Note: This is basic and might not cover all cases. Consider backend processing for robust image extraction.
+  const urlMatch = content.match(/(https?:\/\/[^\\s]+?\.(?:jpg|jpeg|gif|png|webp))/i);
+  if (urlMatch && urlMatch[1]) {
+    return urlMatch[1];
+  }
   return null;
 };
 
-export const groupFeedsByCategory = (feeds) => {
+const groupFeedsByCategory = feeds => {
+  if (!feeds) return {};
   return feeds.reduce((acc, feed) => {
-    const category = feed.category || 'Uncategorized';
+    const category = feed.category || 'FEEDS';
     if (!acc[category]) {
       acc[category] = [];
     }
@@ -55,39 +66,45 @@ export const groupFeedsByCategory = (feeds) => {
   }, {});
 };
 
-export const sortFeedItems = (items, sortBy = 'date') => {
-  return [...items].sort((a, b) => {
-    switch (sortBy) {
-      case 'date':
-        return new Date(b.published) - new Date(a.published);
-      case 'title':
-        return a.title.localeCompare(b.title);
-      default:
-        return 0;
-    }
+// Helper to get unique categories
+const getCategories = feeds => {
+  if (!feeds) return [];
+  const categories = feeds.reduce(
+    (acc, feed) => {
+      if (feed.category && !acc.includes(feed.category)) {
+        acc.push(feed.category);
+      }
+      return acc;
+    },
+    ['RSS FEEDS']
+  ); // Ensure Uncategorized is an option
+
+  // Sort categories alphabetically, keeping Uncategorized first if present
+  return categories.sort((a, b) => {
+    if (a === 'RSS FEEDS') return -1;
+    if (b === 'RSS FEEDS') return 1;
+    return a.localeCompare(b);
   });
 };
 
-export const filterFeedItems = (items, filters) => {
-  return items.filter(item => {
-    if (filters.read && !item.read) return false;
-    if (filters.unread && item.read) return false;
-    if (filters.bookmarked && !item.bookmarked) return false;
-    if (filters.search && !item.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
-    return true;
-  });
+// Simple search filter (adjust fields as needed)
+const filterFeedItems = (items, searchTerm) => {
+  if (!searchTerm) return items;
+  const lowerCaseSearchTerm = searchTerm.toLowerCase();
+  return items.filter(
+    item =>
+      (item.title && item.title.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.description && item.description.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.content && item.content.toLowerCase().includes(lowerCaseSearchTerm))
+  );
 };
 
-export const calculateFeedStats = (feed) => {
-  const totalItems = feed.items?.length || 0;
-  const readItems = feed.items?.filter(item => item.read).length || 0;
-  const bookmarkedItems = feed.items?.filter(item => item.bookmarked).length || 0;
-  
-  return {
-    total: totalItems,
-    read: readItems,
-    unread: totalItems - readItems,
-    bookmarked: bookmarkedItems,
-    readPercentage: totalItems ? Math.round((readItems / totalItems) * 100) : 0,
-  };
-}; 
+export {
+  // parseFeed, // Removed export
+  transformFeedData,
+  formatPublishedDate,
+  extractImageFromContent,
+  groupFeedsByCategory,
+  getCategories,
+  filterFeedItems,
+};

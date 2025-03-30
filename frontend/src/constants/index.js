@@ -1,5 +1,7 @@
 export const APP_NAME = 'RSS Reader';
 
+export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
@@ -7,6 +9,8 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   FEED: '/feed/:feedId',
   SETTINGS: '/settings',
+  TODAY: '/today',
+  SAVED: '/saved',
 };
 
 export const THEME = {
@@ -34,30 +38,71 @@ export const FEED_CATEGORIES = [
 
 export const POPULAR_FEEDS = [
   {
-    title: 'New York Times - Home Page',
-    url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml',
-    category: 'News',
-  },
-  {
-    title: 'Google News - Top Stories',
-    url: 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtVnVHZ0pWVXlnQVAB?hl=en-US&gl=US&ceid=US:en',
-    category: 'News',
-  },
-  {
     title: 'TechCrunch',
     url: 'https://techcrunch.com/feed/',
     category: 'Technology',
   },
   {
-    title: 'BBC News - World',
-    url: 'https://feeds.bbci.co.uk/news/world/rss.xml',
+    title: 'Google News',
+    url: 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en',
     category: 'News',
   },
   {
-    title: 'Reuters - Technology',
-    url: 'https://www.reuters.com/technology/rss',
+    title: 'Meta Engineering',
+    url: 'https://engineering.fb.com/feed/',
     category: 'Technology',
   },
+  {
+    title: 'BBC News',
+    url: 'http://feeds.bbci.co.uk/news/rss.xml',
+    category: 'News',
+  },
+  {
+    title: 'CNN Top Stories',
+    url: 'http://rss.cnn.com/rss/cnn_topstories.rss',
+    category: 'News',
+  },
+  {
+    title: 'New York Times',
+    url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml',
+    category: 'News',
+  },
+  {
+    title: 'NPR News',
+    url: 'https://feeds.npr.org/1001/rss.xml',
+    category: 'News',
+  },
+  {
+    title: 'Reuters Top News',
+    url: 'http://feeds.reuters.com/reuters/topNews',
+    category: 'News',
+  },
+  {
+    title: 'The Guardian World',
+    url: 'https://www.theguardian.com/world/rss',
+    category: 'News',
+  },
+  {
+    title: 'Washington Post World',
+    url: 'http://feeds.washingtonpost.com/rss/world',
+    category: 'News',
+  },
+  {
+    title: 'WSJ Business US',
+    url: 'https://feeds.a.dj.com/rss/WSJcomUSBusiness.xml',
+    category: 'Business',
+  },
+  {
+    title: 'Associated Press Breaking',
+    url: 'https://feeds.feedburner.com/breaking-news',
+    category: 'News',
+  },
+  {
+    title: 'Fox News Latest',
+    url: 'http://feeds.foxnews.com/foxnews/latest',
+    category: 'News',
+  },
+  // Add more popular feeds as needed
 ];
 
 export const API_ENDPOINTS = {
@@ -107,4 +152,4 @@ export const DEFAULT_SETTINGS = {
   markAsRead: true,
   showImages: true,
   itemsPerPage: 20,
-}; 
+};

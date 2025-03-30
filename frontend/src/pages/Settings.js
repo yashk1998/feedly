@@ -16,13 +16,7 @@ import {
 import { useStore } from '../store';
 
 const Settings = () => {
-  const {
-    user,
-    theme,
-    viewMode,
-    setTheme,
-    setViewMode,
-  } = useStore();
+  const { user, theme, viewMode, setTheme, setViewMode } = useStore();
 
   return (
     <Container maxWidth="md">
@@ -36,11 +30,7 @@ const Settings = () => {
           </Typography>
           <FormControl fullWidth sx={{ mb: 3 }}>
             <InputLabel>Theme</InputLabel>
-            <Select
-              value={theme}
-              label="Theme"
-              onChange={(e) => setTheme(e.target.value)}
-            >
+            <Select value={theme} label="Theme" onChange={e => setTheme(e.target.value)}>
               <MenuItem value="light">Light</MenuItem>
               <MenuItem value="dark">Dark</MenuItem>
             </Select>
@@ -48,11 +38,7 @@ const Settings = () => {
 
           <FormControl fullWidth sx={{ mb: 3 }}>
             <InputLabel>View Mode</InputLabel>
-            <Select
-              value={viewMode}
-              label="View Mode"
-              onChange={(e) => setViewMode(e.target.value)}
-            >
+            <Select value={viewMode} label="View Mode" onChange={e => setViewMode(e.target.value)}>
               <MenuItem value="list">List View</MenuItem>
               <MenuItem value="grid">Grid View</MenuItem>
             </Select>
@@ -92,7 +78,7 @@ const Settings = () => {
               step={60}
               marks
               valueLabelDisplay="auto"
-              valueLabelFormat={(value) => `${value / 60} minutes`}
+              valueLabelFormat={value => `${value / 60} minutes`}
             />
           </Box>
 
@@ -106,4 +92,4 @@ const Settings = () => {
   );
 };
 
-export default Settings; 
+export default Settings;
