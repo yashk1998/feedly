@@ -1,0 +1,510 @@
+{
+	"info": {
+		"_postman_id": "YOUR_UNIQUE_COLLECTION_ID", 
+		"name": "RSS Reader API",
+		"description": "Collection for testing the MERN RSS Reader Backend API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "YOUR_EXPORTER_ID" 
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"description": "User registration and login",
+			"item": [
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/auth/register",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Registers a new user."
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Automatically grab the token and set it as an environment variable",
+									"if (pm.response.code === 200) {",
+									"    pm.environment.set(\"authToken\", pm.response.json().token);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/auth/login",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Logs in an existing user and returns a JWT.\n**Test Script:** Automatically sets the received token to the `authToken` environment variable."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/auth/me",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "Retrieves the details of the currently authenticated user."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Feeds",
+			"description": "Managing feed subscriptions",
+			"item": [
+				{
+					"name": "Get All User Feeds",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/feeds",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"feeds"
+							]
+						},
+						"description": "Retrieves a list of all feeds the authenticated user is subscribed to."
+					},
+					"response": []
+				},
+				{
+					"name": "Add New Feed",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"url\": \"https://example.com/rss.xml\",\n    \"title\": \"Optional Title\",\n    \"category\": \"News\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/feeds",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"feeds"
+							]
+						},
+						"description": "Subscribes the authenticated user to a new RSS feed."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Specific Feed",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/feeds/:feedId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"feeds",
+								":feedId"
+							],
+							"variable": [
+								{
+									"key": "feedId",
+									"value": "YOUR_FEED_ID",
+									"description": "Replace with the actual ID of the feed to retrieve."
+								}
+							]
+						},
+						"description": "Retrieves details and items for a specific feed subscription."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Feed Details",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated Feed Title\",\n    \"category\": \"Technology\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/feeds/:feedId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"feeds",
+								":feedId"
+							],
+							"variable": [
+								{
+									"key": "feedId",
+									"value": "YOUR_FEED_ID",
+									"description": "Replace with the actual ID of the feed to update."
+								}
+							]
+						},
+						"description": "Updates the title or category of a specific feed subscription."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Feed",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/feeds/:feedId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"feeds",
+								":feedId"
+							],
+							"variable": [
+								{
+									"key": "feedId",
+									"value": "YOUR_FEED_ID",
+									"description": "Replace with the actual ID of the feed to delete."
+								}
+							]
+						},
+						"description": "Unsubscribes the user from a specific feed."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Feed Item Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"read\": true,\n    \"bookmarked\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/feeds/:feedId/items/:itemId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"feeds",
+								":feedId",
+								"items",
+								":itemId"
+							],
+							"variable": [
+								{
+									"key": "feedId",
+									"value": "YOUR_FEED_ID",
+									"description": "ID of the parent feed."
+								},
+								{
+									"key": "itemId",
+									"value": "YOUR_ITEM_ID",
+									"description": "ID of the specific item within the feed."
+								}
+							]
+						},
+						"description": "Updates the read or bookmarked status of a specific feed item."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Preferences",
+			"description": "Managing user-specific settings",
+			"item": [
+				{
+					"name": "Get User Preferences",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/users/preferences",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"users",
+								"preferences"
+							]
+						},
+						"description": "Retrieves the preferences for the currently authenticated user."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Preferences",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"theme\": \"dark\",\n    \"viewMode\": \"grid\",\n    \"autoRefresh\": true,\n    \"autoRefreshInterval\": 15\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/users/preferences",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"users",
+								"preferences"
+							]
+						},
+						"description": "Updates the preferences for the currently authenticated user."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{authToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": "http://localhost:5000/api",
+			"type": "string",
+			"description": "Base URL for the backend API"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string",
+			"description": "JWT received after login"
+		}
+	]
+} 
