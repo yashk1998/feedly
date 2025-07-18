@@ -22,17 +22,19 @@ export class AIService {
   private azureOpenAIEndpoint: string;
   private azureOpenAIKey: string;
   private deploymentName: string;
+  private deploymentVersion: string;
 
   constructor() {
     this.azureOpenAIEndpoint = process.env.AZURE_OPENAI_ENDPOINT || '';
     this.azureOpenAIKey = process.env.AZURE_OPENAI_KEY || '';
-    this.deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4';
+    this.deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o';
+    this.deploymentVersion = process.env.AZURE_OPENAI_DEPLOYMENT_VERSION || '2024-02-15-preview';
   }
 
   private async callAzureOpenAI(prompt: string, maxTokens: number = 500): Promise<string> {
     try {
       const response = await axios.post(
-        `${this.azureOpenAIEndpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=2024-02-15-preview`,
+        `${this.azureOpenAIEndpoint}/openai/deployments/${this.deploymentName}/chat/completions?api-version=${this.deploymentVersion}`,
         {
           messages: [
             {
@@ -202,7 +204,7 @@ Category:`;
   async healthCheck(): Promise<boolean> {
     try {
       const response = await axios.get(
-        `${this.azureOpenAIEndpoint}/openai/models?api-version=2024-02-15-preview`,
+        `${this.azureOpenAIEndpoint}/openai/models?api-version=${this.deploymentVersion}`,
         {
           headers: {
             'api-key': this.azureOpenAIKey
