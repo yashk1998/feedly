@@ -1,0 +1,649 @@
+{
+  "info": {
+    "name": "Feedly RSS SaaS API",
+    "description": "Complete API collection for testing Feedly RSS feed reader backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{clerk_session_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "clerk_session_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Feeds",
+      "item": [
+        {
+          "name": "Get All Feeds",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/feeds",
+              "host": ["{{base_url}}"],
+              "path": ["api", "feeds"]
+            }
+          }
+        },
+        {
+          "name": "Add New Feed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://techcrunch.com/feed/\",\n  \"category\": \"technology\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/feeds",
+              "host": ["{{base_url}}"],
+              "path": ["api", "feeds"]
+            }
+          }
+        },
+        {
+          "name": "Get Feed by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/feeds/:feedId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "feeds", ":feedId"],
+              "variable": [
+                {
+                  "key": "feedId",
+                  "value": "feed_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Feed",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"business\",\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/feeds/:feedId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "feeds", ":feedId"],
+              "variable": [
+                {
+                  "key": "feedId",
+                  "value": "feed_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Feed",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/feeds/:feedId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "feeds", ":feedId"],
+              "variable": [
+                {
+                  "key": "feedId",
+                  "value": "feed_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Feed",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/feeds/:feedId/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "feeds", ":feedId", "refresh"],
+              "variable": [
+                {
+                  "key": "feedId",
+                  "value": "feed_id_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Articles",
+      "item": [
+        {
+          "name": "Get Articles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/articles?page=1&limit=20&search=&category=&unread=false",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "category",
+                  "value": ""
+                },
+                {
+                  "key": "unread",
+                  "value": "false"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Article by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/articles/:articleId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles", ":articleId"],
+              "variable": [
+                {
+                  "key": "articleId",
+                  "value": "article_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Article as Read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/articles/:articleId/read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles", ":articleId", "read"],
+              "variable": [
+                {
+                  "key": "articleId",
+                  "value": "article_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Article as Unread",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/articles/:articleId/read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "articles", ":articleId", "read"],
+              "variable": [
+                {
+                  "key": "articleId",
+                  "value": "article_id_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Features",
+      "item": [
+        {
+          "name": "Summarize Article",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"articleId\": \"article_id_here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/summarize",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "summarize"]
+            }
+          }
+        },
+        {
+          "name": "Generate Social Media Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"articleId\": \"article_id_here\",\n  \"platform\": \"twitter\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/social-post",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "social-post"]
+            }
+          }
+        },
+        {
+          "name": "Extract Keywords",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"articleId\": \"article_id_here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/keywords",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "keywords"]
+            }
+          }
+        },
+        {
+          "name": "Analyze Sentiment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"articleId\": \"article_id_here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/ai/sentiment",
+              "host": ["{{base_url}}"],
+              "path": ["api", "ai", "sentiment"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teams",
+      "item": [
+        {
+          "name": "Get User Teams",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/teams",
+              "host": ["{{base_url}}"],
+              "path": ["api", "teams"]
+            }
+          }
+        },
+        {
+          "name": "Create Team",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Team\",\n  \"plan\": \"pro\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/teams",
+              "host": ["{{base_url}}"],
+              "path": ["api", "teams"]
+            }
+          }
+        },
+        {
+          "name": "Get Team Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/teams/:teamId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "teams", ":teamId"],
+              "variable": [
+                {
+                  "key": "teamId",
+                  "value": "team_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Team Member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"member@example.com\",\n  \"role\": \"editor\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/teams/:teamId/members",
+              "host": ["{{base_url}}"],
+              "path": ["api", "teams", ":teamId", "members"],
+              "variable": [
+                {
+                  "key": "teamId",
+                  "value": "team_id_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"pro\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments/subscribe",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", "subscribe"]
+            }
+          }
+        },
+        {
+          "name": "Get Subscription Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/payments/subscription",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", "subscription"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/payments/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", "cancel"]
+            }
+          }
+        },
+        {
+          "name": "Razorpay Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Razorpay-Signature",
+                "value": "webhook_signature_here"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"subscription.charged\",\n  \"payload\": {\n    \"subscription\": {\n      \"entity\": {\n        \"id\": \"sub_test_123\",\n        \"status\": \"active\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/payments/webhook",
+              "host": ["{{base_url}}"],
+              "path": ["api", "payments", "webhook"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Get Reading Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/analytics/reading?period=7d",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "reading"],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "7d"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Track Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"article_read\",\n  \"properties\": {\n    \"article_id\": \"article_id_here\",\n    \"feed_id\": \"feed_id_here\",\n    \"reading_time\": 120\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/analytics/track",
+              "host": ["{{base_url}}"],
+              "path": ["api", "analytics", "track"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get System Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users?page=1&limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/:userId",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "users", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "user_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh All Feeds",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/refresh-feeds",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "refresh-feeds"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Server Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set authorization header if clerk_session_token is available",
+          "if (pm.collectionVariables.get('clerk_session_token')) {",
+          "    pm.request.headers.add({",
+          "        key: 'Authorization',",
+          "        value: 'Bearer ' + pm.collectionVariables.get('clerk_session_token')",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ]
+} 

@@ -1,0 +1,177 @@
+// prisma/schema.prisma
+// Prisma schema for Growero RSS SaaS
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  free
+  pro
+  power
+}
+
+enum TeamRole {
+  owner
+  editor
+  viewer
+}
+
+enum SocialNetwork {
+  twitter
+  linkedin
+  reddit
+}
+
+enum PaymentStatus {
+  active
+  canceled
+  past_due
+  trial
+}
+
+model User {
+  id        String   @id @db.Char(36)
+  email     String   @unique
+  name      String?  @db.VarChar(255)
+  tz        String?  @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  teamsOwned    Team[]         @relation("TeamsOwner")
+  memberships   TeamMember[]
+  subscriptions Subscription[]
+  reads         ArticleRead[]
+  aiCredits     AiCredits[]
+  socialTokens  SocialToken[]
+  payments      Payment[]
+}
+
+model Team {
+  id              BigInt   @id @default(autoincrement())
+  name            String   @db.VarChar(255)
+  ownerUserId     String   @map("owner_user_id")
+  plan            Plan     @default(free)
+  slackWebhookUrl String?  @map("slack_webhook_url") @db.VarChar(500)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  owner         User           @relation("TeamsOwner", fields: [ownerUserId], references: [id])
+  members       TeamMember[]
+  subscriptions Subscription[]
+}
+
+model TeamMember {
+  teamId BigInt   @map("team_id")
+  userId String   @map("user_id")
+  role   TeamRole @default(viewer)
+
+  team Team @relation(fields: [teamId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([teamId, userId])
+}
+
+model Feed {
+  id            BigInt    @id @default(autoincrement())
+  url           String    @unique @db.VarChar(500)
+  title         String?   @db.VarChar(255)
+  siteUrl       String?   @map("site_url") @db.VarChar(500)
+  lastFetchedAt DateTime? @map("last_fetched_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+  articles      Article[]
+}
+
+model Subscription {
+  id        BigInt   @id @default(autoincrement())
+  teamId    BigInt?  @map("team_id")
+  userId    String?  @map("user_id")
+  feedId    BigInt   @map("feed_id")
+  category  String?  @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  team Team? @relation(fields: [teamId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
+  feed Feed  @relation(fields: [feedId], references: [id])
+}
+
+model Article {
+  id          BigInt    @id @default(autoincrement())
+  feedId      BigInt    @map("feed_id")
+  guid        String    @db.VarChar(255)
+  title       String?   @db.LongText
+  url         String?   @db.LongText
+  publishedAt DateTime? @map("published_at")
+  author      String?   @db.VarChar(255)
+  summaryHtml String?   @map("summary_html") @db.MediumText
+  contentHtml String?   @map("content_html") @db.LongText
+  checksum    String    @db.Char(64)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  feed  Feed          @relation(fields: [feedId], references: [id])
+  reads ArticleRead[]
+
+  @@unique([feedId, guid])
+  @@index([checksum])
+  @@index([publishedAt])
+}
+
+model ArticleRead {
+  articleId BigInt   @map("article_id")
+  userId    String   @map("user_id")
+  readAt    DateTime @default(now()) @map("read_at")
+
+  article Article @relation(fields: [articleId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@id([articleId, userId])
+}
+
+model AiCredits {
+  userId     String   @map("user_id")
+  cycleStart DateTime @map("cycle_start")
+  cycleEnd   DateTime @map("cycle_end")
+  used       Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, cycleStart])
+}
+
+model SocialToken {
+  userId       String        @map("user_id")
+  network      SocialNetwork
+  accessToken  String        @db.LongText
+  refreshToken String?       @db.LongText
+  expiresAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, network])
+}
+
+model Payment {
+  razorpaySubscriptionId String        @id @map("razorpay_subscription_id")
+  userId                 String        @map("user_id")
+  plan                   Plan
+  status                 PaymentStatus
+  currentPeriodStart     DateTime?     @map("current_period_start")
+  currentPeriodEnd       DateTime?     @map("current_period_end")
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model AdminLog {
+  id        BigInt   @id @default(autoincrement())
+  action    String   @db.VarChar(255)
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+}
