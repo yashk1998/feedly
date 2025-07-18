@@ -61,7 +61,7 @@ export class FeedService {
       const response = await axios.get(url, {
         timeout: 30000,
         headers: {
-          'User-Agent': 'Growero RSS Reader/1.0'
+          'User-Agent': 'rivsy RSS Reader/1.0'
         }
       });
 
@@ -123,7 +123,7 @@ export class FeedService {
     const response = await axios.get(url, {
       timeout: 30000,
       headers: {
-        'User-Agent': 'Growero RSS Reader/1.0'
+        'User-Agent': 'rivsy RSS Reader/1.0'
       }
     });
 

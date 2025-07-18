@@ -1,5 +1,5 @@
 // prisma/schema.prisma
-// Prisma schema for Growero RSS SaaS
+// Prisma schema for rivsy RSS SaaS
 
 generator client {
   provider = "prisma-client-js"

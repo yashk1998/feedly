@@ -1,6 +1,6 @@
-# Growero Server
+# rivsy Server
 
-Express.js backend for the Growero RSS SaaS application.
+Express.js backend for the rivsy RSS SaaS application.
 
 ## Setup
 
@@ -17,7 +17,7 @@ Express.js backend for the Growero RSS SaaS application.
 
 3. **Set up database**:
    - Install MySQL 8.0
-   - Create database: `CREATE DATABASE growero;`
+   - Create database: `CREATE DATABASE rivsy;`
    - Run migrations: `npx prisma db push`
 
 4. **Set up Redis**:

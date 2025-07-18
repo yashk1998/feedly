@@ -190,7 +190,7 @@ export default function LandingPage() {
             Ready to transform your reading experience?
           </h2>
           <p className="text-xl text-primary-100 mb-8">
-            Join thousands of users who stay informed with Growero
+            Join thousands of users who stay informed with rivsy
           </p>
           <SignUpButton mode="modal">
             <button className="bg-white text-primary-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors">

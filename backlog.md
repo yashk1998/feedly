@@ -17,7 +17,7 @@ This file lists features and improvements deferred beyond the initial 2-week MVP
 - **Enhanced Team KPIs** (articles shared, comments, reactions, active teammates).
 - **Advanced Slack notifications**: per-article, hourly digest, keyword-matched alerts.
 - **Additional Social Networks**: Bluesky, Mastodon, Medium, Facebook Pages.
-- **Workspace sub-domains** (e.g., `acme.growero.org`) and custom branding.
+- **Workspace sub-domains** (e.g., `acme.rivsy.org`) and custom branding.
 - **Import/Export via OPML** for feed portability.
 - **AI-powered recommendations** for new feeds/articles.
 - **Browser extensions** for quick feed subscription and link saving.

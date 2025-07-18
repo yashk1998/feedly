@@ -1,5 +1,5 @@
 -- 001_init.sql
--- Initial schema for Growero RSS SaaS (MySQL 8)
+-- Initial schema for rivsy RSS SaaS (MySQL 8)
 
 -- USERS ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (

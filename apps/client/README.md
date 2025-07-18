@@ -1,6 +1,6 @@
-# Growero Frontend
+# rivsy Frontend
 
-Modern React frontend for the Growero RSS SaaS platform built with Vite, TypeScript, and Tailwind CSS.
+Modern React frontend for the rivsy RSS SaaS platform built with Vite, TypeScript, and Tailwind CSS.
 
 ## 🚀 Features
 
@@ -290,4 +290,4 @@ npm run test:coverage # Generate coverage report
 
 ## 📄 License
 
-This project is part of the Growero RSS SaaS platform. 
+This project is part of the rivsy RSS SaaS platform. 

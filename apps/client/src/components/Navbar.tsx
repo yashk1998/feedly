@@ -21,7 +21,7 @@ export default function Navbar() {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <Rss className="h-8 w-8 text-primary-600" />
-              <span className="text-xl font-bold text-gray-900">Growero</span>
+              <span className="text-xl font-bold text-gray-900">Rivsy</span>
             </Link>
           </div>
 

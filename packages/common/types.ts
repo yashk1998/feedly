@@ -1,5 +1,5 @@
 // packages/common/types.ts
-// Shared TypeScript types for Growero RSS SaaS
+// Shared TypeScript types for rivsy RSS SaaS
 
 export type Plan = 'free' | 'pro' | 'power';
 export type TeamRole = 'owner' | 'editor' | 'viewer';

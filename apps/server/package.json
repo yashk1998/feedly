@@ -1,7 +1,7 @@
 {
-  "name": "growero-server",
+  "name": "rivsy-server",
   "version": "1.0.0",
-  "description": "Growero RSS SaaS - Express API Server",
+  "description": "rivsy RSS SaaS - Express API Server",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

@@ -1,7 +1,7 @@
 {
-  "name": "growero-client",
+  "name": "rivsy-client",
   "version": "1.0.0",
-  "description": "Growero RSS SaaS - React Frontend",
+  "description": "rivsy RSS SaaS - React Frontend",
   "type": "module",
   "scripts": {
     "dev": "vite",

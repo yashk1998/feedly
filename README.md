@@ -1,4 +1,4 @@
-# 🌱 Growero RSS SaaS
+# 🌱 rivsy RSS SaaS
 
 > AI-powered RSS feed reader with team collaboration, social media integration, and intelligent content curation.
 
@@ -43,7 +43,7 @@
 ## 🏗️ Architecture
 
 ```
-growero/
+rivsy/
 ├── apps/
 │   ├── server/          # Node.js/Express backend
 │   └── client/          # React/Vite frontend
@@ -91,7 +91,7 @@ growero/
 
 ```bash
 git clone <repository-url>
-cd growero
+cd rivsy
 npm run install:all
 ```
 
@@ -106,7 +106,7 @@ cp env.example .env
 Edit `apps/server/.env` with your configuration:
 ```env
 # Database
-DATABASE_URL="mysql://user:password@localhost:3306/growero"
+DATABASE_URL="mysql://user:password@localhost:3306/rivsy"
 REDIS_URL="redis://localhost:6379"
 
 # Authentication
@@ -194,7 +194,7 @@ See [Frontend README](apps/client/README.md) for component documentation.
 Import the provided Postman collection to test all API endpoints:
 
 ```bash
-# Import Growero_API.postman_collection.json into Postman
+# Import rivsy_API.postman_collection.json into Postman
 # Set environment variables:
 # - base_url: http://localhost:3001
 # - clerk_session_token: (get from browser dev tools)
@@ -231,7 +231,7 @@ Ensure all production environment variables are set:
 ### Azure VM Deployment
 
 1. **Setup VM**: Ubuntu 20.04+ with Node.js, MySQL, Redis
-2. **Clone Repository**: Deploy code to `/opt/growero`
+2. **Clone Repository**: Deploy code to `/opt/rivsy`
 3. **Install Dependencies**: Run `npm run install:all`
 4. **Database Migration**: Run `npm run db:migrate`
 5. **Process Manager**: Use PM2 for process management
@@ -258,7 +258,7 @@ Ensure all production environment variables are set:
 ### Project Structure
 
 ```
-growero/
+rivsy/
 ├── apps/
 │   ├── server/                 # Backend application
 │   │   ├── src/
@@ -276,7 +276,7 @@ growero/
 │       │   └── utils/          # Utility functions
 │       └── package.json
 ├── docs/                      # Project documentation
-├── Growero_API.postman_collection.json
+├── rivsy_API.postman_collection.json
 └── package.json              # Root package.json
 ```
 

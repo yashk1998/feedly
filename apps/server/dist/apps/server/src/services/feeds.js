@@ -44,7 +44,7 @@ class FeedService {
             const response = await axios_1.default.get(url, {
                 timeout: 30000,
                 headers: {
-                    'User-Agent': 'Growero RSS Reader/1.0'
+                    'User-Agent': 'rivsy RSS Reader/1.0'
                 }
             });
             return new Promise((resolve, reject) => {
@@ -99,7 +99,7 @@ class FeedService {
         const response = await axios_1.default.get(url, {
             timeout: 30000,
             headers: {
-                'User-Agent': 'Growero RSS Reader/1.0'
+                'User-Agent': 'rivsy RSS Reader/1.0'
             }
         });
         const dom = new jsdom_1.JSDOM(response.data, { url });
