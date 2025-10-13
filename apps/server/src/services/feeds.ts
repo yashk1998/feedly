@@ -77,8 +77,8 @@ export class FeedService {
         });
 
         feedparser.on('readable', function(this: any) {
-          let item;
-          while (item = this.read()) {
+          let item = this.read();
+          while (item) {
             articles.push({
               guid: item.guid || item.link || crypto.randomUUID(),
               title: item.title || 'Untitled',
@@ -88,6 +88,7 @@ export class FeedService {
               summary: item.summary || item.description || '',
               content: item.description || item.summary || ''
             });
+            item = this.read();
           }
         });
 

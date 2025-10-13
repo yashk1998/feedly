@@ -93,10 +93,10 @@ export class CreditsService {
     
     const newUsed = used + 1;
     let warning: string | undefined;
-    
+
     // Send warning email if exceeding soft limit for first time
-    if (newUsed === 151) {
-      warning = 'You have exceeded your plan limit. You can still use AI features until you reach 180 credits.';
+    if (newUsed === limit + 1) {
+      warning = `You have exceeded your plan limit of ${limit} credits. You can still use AI features until you reach 180 credits.`;
       // TODO: Send email warning
       logger.info(`User ${userId} exceeded soft credit limit`);
     }

@@ -4,7 +4,6 @@ import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 import { prisma } from '../index';
 import { logger } from '../index';
 import { feedService } from '../services/feeds';
-import { Request, Response } from 'express';
 
 const router = Router();
 

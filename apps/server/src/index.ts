@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { createClient } from 'redis';
@@ -18,6 +19,7 @@ import analyticsRoutes from './routes/analytics';
 import adminRoutes from './routes/admin';
 
 // Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
 
 // Initialize Prisma
