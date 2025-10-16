@@ -11,6 +11,7 @@ const querySchema = z.object({
   page: z.string().optional().default('1'),
   limit: z.string().optional().default('20'),
   feedId: z.string().optional(),
+  category: z.string().optional(),
   unread: z.string().optional(),
   search: z.string().optional()
 });
@@ -26,35 +27,43 @@ const markReadSchema = z.object({
 router.get('/', requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest;
   try {
-    const { page, limit, feedId, unread, search } = querySchema.parse(req.query);
+    const { page, limit, feedId, unread, search, category } = querySchema.parse(req.query);
     const userId = authReq.userId;
-    
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
     const skip = (pageNum - 1) * limitNum;
 
-    // Build where clause
+    const subscriptionFilter: any = {
+      OR: [
+        { userId },
+        {
+          team: {
+            members: {
+              some: { userId }
+            }
+          }
+        }
+      ]
+    };
+
+    if (category && category !== 'all') {
+      subscriptionFilter.category = category;
+    }
+
     const where: any = {
       feed: {
         subscriptions: {
-          some: {
-            OR: [
-              { userId },
-              {
-                team: {
-                  members: {
-                    some: { userId }
-                  }
-                }
-              }
-            ]
-          }
+          some: subscriptionFilter
         }
       }
     };
 
     if (feedId) {
-      where.feedId = parseInt(feedId);
+      const feedIdNum = parseInt(feedId, 10);
+      if (!Number.isNaN(feedIdNum)) {
+        where.feedId = BigInt(feedIdNum);
+      }
     }
 
     if (unread === 'true') {
@@ -65,13 +74,12 @@ router.get('/', requireAuth, async (req, res) => {
 
     if (search) {
       where.OR = [
-        { title: { contains: search } },
-        { summaryHtml: { contains: search } },
-        { author: { contains: search } }
+        { title: { contains: search, mode: 'insensitive' } },
+        { summaryHtml: { contains: search, mode: 'insensitive' } },
+        { author: { contains: search, mode: 'insensitive' } }
       ];
     }
 
-    // Get articles with read status
     const articles = await prisma.article.findMany({
       where,
       include: {
@@ -94,20 +102,23 @@ router.get('/', requireAuth, async (req, res) => {
       take: limitNum
     });
 
-    // Get total count for pagination
     const total = await prisma.article.count({ where });
 
-    const formattedArticles = articles.map(article => ({
-      id: article.id,
+    const formattedArticles = articles.map((article) => ({
+      id: Number(article.id),
       title: article.title,
       url: article.url,
       publishedAt: article.publishedAt,
       author: article.author,
       summary: article.summaryHtml,
       content: article.contentHtml,
-      feed: article.feed,
+      feed: {
+        id: Number(article.feed.id),
+        title: article.feed.title,
+        siteUrl: article.feed.siteUrl
+      },
       isRead: article.reads.length > 0,
-      readAt: article.reads[0]?.readAt
+      readAt: article.reads[0]?.readAt || null
     }));
 
     res.json({
@@ -134,12 +145,16 @@ router.get('/', requireAuth, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest;
   try {
-    const articleId = parseInt(req.params.id);
+    const articleId = parseInt(req.params.id, 10);
+    if (Number.isNaN(articleId)) {
+      return res.status(400).json({ error: 'Invalid article id' });
+    }
+
     const userId = authReq.userId;
 
     const article = await prisma.article.findFirst({
       where: {
-        id: articleId,
+        id: BigInt(articleId),
         feed: {
           subscriptions: {
             some: {
@@ -176,25 +191,28 @@ router.get('/:id', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Article not found' });
     }
 
-    // Auto-mark as read when viewing
     if (article.reads.length === 0) {
       await prisma.articleRead.create({
         data: {
-          articleId,
+          articleId: BigInt(articleId),
           userId
         }
       });
     }
 
     res.json({
-      id: article.id,
+      id: Number(article.id),
       title: article.title,
       url: article.url,
       publishedAt: article.publishedAt,
       author: article.author,
       summary: article.summaryHtml,
       content: article.contentHtml,
-      feed: article.feed,
+      feed: {
+        id: Number(article.feed.id),
+        title: article.feed.title,
+        siteUrl: article.feed.siteUrl
+      },
       isRead: true,
       readAt: article.reads[0]?.readAt || new Date()
     });
@@ -214,7 +232,6 @@ router.post('/mark-read', requireAuth, async (req, res) => {
     const userId = authReq.userId;
 
     if (all) {
-      // Mark all unread articles as read
       const unreadArticles = await prisma.article.findMany({
         where: {
           reads: {
@@ -240,7 +257,7 @@ router.post('/mark-read', requireAuth, async (req, res) => {
         select: { id: true }
       });
 
-      const readData = unreadArticles.map(article => ({
+      const readData = unreadArticles.map((article) => ({
         articleId: article.id,
         userId
       }));
@@ -251,10 +268,12 @@ router.post('/mark-read', requireAuth, async (req, res) => {
       });
 
       res.json({ message: `Marked ${unreadArticles.length} articles as read` });
-    } else if (articleIds && articleIds.length > 0) {
-      // Mark specific articles as read
-      const readData = articleIds.map(articleId => ({
-        articleId,
+      return;
+    }
+
+    if (articleIds && articleIds.length > 0) {
+      const readData = articleIds.map((articleId) => ({
+        articleId: BigInt(articleId),
         userId
       }));
 
@@ -264,9 +283,10 @@ router.post('/mark-read', requireAuth, async (req, res) => {
       });
 
       res.json({ message: `Marked ${articleIds.length} articles as read` });
-    } else {
-      res.status(400).json({ error: 'Must provide either articleIds or all=true' });
+      return;
     }
+
+    res.status(400).json({ error: 'Must provide either articleIds or all=true' });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: 'Invalid input', details: error.errors });
@@ -282,12 +302,16 @@ router.post('/mark-read', requireAuth, async (req, res) => {
 router.post('/:id/unread', requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest;
   try {
-    const articleId = parseInt(req.params.id);
+    const articleId = parseInt(req.params.id, 10);
+    if (Number.isNaN(articleId)) {
+      return res.status(400).json({ error: 'Invalid article id' });
+    }
+
     const userId = authReq.userId;
 
     await prisma.articleRead.deleteMany({
       where: {
-        articleId,
+        articleId: BigInt(articleId),
         userId
       }
     });
@@ -299,4 +323,63 @@ router.post('/:id/unread', requireAuth, async (req, res) => {
   }
 });
 
-export default router; 
+/**
+ * POST /api/articles/:id/read - Mark single article as read
+ */
+router.post('/:id/read', requireAuth, async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id, 10);
+    if (Number.isNaN(articleId)) {
+      return res.status(400).json({ error: 'Invalid article id' });
+    }
+
+    const userId = (req as AuthenticatedRequest).userId;
+
+    const article = await prisma.article.findFirst({
+      where: {
+        id: BigInt(articleId),
+        feed: {
+          subscriptions: {
+            some: {
+              OR: [
+                { userId },
+                {
+                  team: {
+                    members: {
+                      some: { userId }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    });
+
+    if (!article) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    await prisma.articleRead.upsert({
+      where: {
+        articleId_userId: {
+          articleId: BigInt(articleId),
+          userId
+        }
+      },
+      update: {},
+      create: {
+        articleId: BigInt(articleId),
+        userId
+      }
+    });
+
+    res.json({ message: 'Article marked as read' });
+  } catch (error) {
+    logger.error('Error marking article as read:', error);
+    res.status(500).json({ error: 'Failed to mark article as read' });
+  }
+});
+
+export default router;

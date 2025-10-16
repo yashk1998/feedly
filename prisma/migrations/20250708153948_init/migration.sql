@@ -36,9 +36,9 @@ CREATE TABLE `TeamMember` (
 -- CreateTable
 CREATE TABLE `Feed` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
-    `url` VARCHAR(2048) NOT NULL,
+    `url` VARCHAR(500) NOT NULL,
     `title` VARCHAR(255) NULL,
-    `site_url` VARCHAR(2048) NULL,
+    `site_url` VARCHAR(500) NULL,
     `last_fetched_at` DATETIME(3) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,

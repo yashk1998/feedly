@@ -1,56 +1,68 @@
 import { useState } from 'react'
-import { useQuery } from 'react-query'
+import { useQuery, useQueryClient } from 'react-query'
 import { Link } from 'react-router-dom'
 import { Plus, Filter, Search, Clock, ExternalLink, Sparkles } from 'lucide-react'
-import axios from 'axios'
+import { useApiClient } from '../lib/apiClient'
 
 interface Article {
-  id: string
-  title: string
-  description: string
-  url: string
-  publishedAt: string
+  id: number
+  title: string | null
+  summary: string | null
+  url: string | null
+  publishedAt: string | null
   readAt: string | null
   feed: {
-    title: string
-    url: string
+    id: number
+    title: string | null
+    siteUrl: string | null
   }
+}
+
+interface FeedSummary {
+  id: number
+  title?: string | null
+  url: string
+  unreadCount: number
 }
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showUnreadOnly, setShowUnreadOnly] = useState(false)
+  const api = useApiClient()
+  const queryClient = useQueryClient()
 
-  const { data: articles, isLoading } = useQuery(
+  const { data: articlesResponse, isLoading } = useQuery(
     ['articles', { search: searchQuery, category: selectedCategory, unread: showUnreadOnly }],
     async () => {
-      const params = new URLSearchParams()
-      if (searchQuery) params.append('search', searchQuery)
-      if (selectedCategory !== 'all') params.append('category', selectedCategory)
-      if (showUnreadOnly) params.append('unread', 'true')
-      
-      const response = await axios.get(`/api/articles?${params}`)
-      return response.data
+      const response = await api.get('/articles', {
+        params: {
+          search: searchQuery || undefined,
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          unread: showUnreadOnly ? 'true' : undefined
+        }
+      })
+      return response.data as { articles: Article[]; pagination: { total: number } }
     },
     { refetchInterval: 60000 } // Refetch every minute
   )
 
   const { data: feeds } = useQuery('feeds', async () => {
-    const response = await axios.get('/api/feeds')
-    return response.data
+    const response = await api.get('/feeds')
+    return response.data.feeds as FeedSummary[]
   })
 
-  const markAsRead = async (articleId: string) => {
+  const markAsRead = async (articleId: number) => {
     try {
-      await axios.post(`/api/articles/${articleId}/read`)
-      // Invalidate queries to refetch data
+      await api.post(`/articles/${articleId}/read`)
+      queryClient.invalidateQueries('articles')
     } catch (error) {
       console.error('Failed to mark article as read:', error)
     }
   }
 
   const categories = ['all', 'technology', 'business', 'science', 'politics', 'sports']
+  const articles = articlesResponse?.articles ?? []
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -125,10 +137,10 @@ export default function Dashboard() {
           <div className="card p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Feeds</h2>
             <div className="space-y-2">
-              {feeds?.slice(0, 5).map((feed: any) => (
+              {feeds?.slice(0, 5).map((feed) => (
                 <div key={feed.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                  <span className="text-sm text-gray-700 truncate">{feed.title}</span>
-                  <span className="text-xs text-gray-500">{feed._count?.articles || 0}</span>
+                  <span className="text-sm text-gray-700 truncate">{feed.title || feed.url}</span>
+                  <span className="text-xs text-gray-500">{feed.unreadCount}</span>
                 </div>
               ))}
               <Link to="/feeds" className="text-sm text-primary-600 hover:text-primary-700">
@@ -145,7 +157,7 @@ export default function Dashboard() {
             <div className="flex items-center space-x-2">
               <Filter className="h-4 w-4 text-gray-400" />
               <span className="text-sm text-gray-600">
-                {articles?.length || 0} articles
+                {articles.length} articles
               </span>
             </div>
           </div>
@@ -177,17 +189,17 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="space-y-4">
-              {articles?.map((article: Article) => (
+              {articles.map((article) => (
                 <div key={article.id} className={`card p-6 hover:shadow-md transition-shadow ${
                   article.readAt ? 'opacity-75' : ''
                 }`}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                        {article.title}
+                        {article.title || 'Untitled'}
                       </h3>
                       <p className="text-sm text-gray-600 mb-2">
-                        {article.feed.title} • {new Date(article.publishedAt).toLocaleDateString()}
+                        {article.feed.title || 'Unknown Feed'} • {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'Unknown'}
                       </p>
                     </div>
                     {!article.readAt && (
@@ -196,7 +208,7 @@ export default function Dashboard() {
                   </div>
                   
                   <p className="text-gray-700 mb-4 line-clamp-3">
-                    {article.description}
+                    {article.summary || 'No summary available.'}
                   </p>
                   
                   <div className="flex items-center justify-between">
@@ -208,15 +220,17 @@ export default function Dashboard() {
                       >
                         Read More
                       </Link>
-                      <a
-                        href={article.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-gray-700 text-sm flex items-center"
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Original
-                      </a>
+                      {article.url && (
+                        <a
+                          href={article.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-500 hover:text-gray-700 text-sm flex items-center"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Original
+                        </a>
+                      )}
                     </div>
                     
                     <div className="flex items-center space-x-2">

@@ -2,36 +2,45 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation } from 'react-query'
 import { ArrowLeft, ExternalLink, Sparkles, Share2, Clock, User } from 'lucide-react'
-import axios from 'axios'
 import toast from 'react-hot-toast'
 import ReactMarkdown from 'react-markdown'
+import { useApiClient } from '../lib/apiClient'
 
 export default function ArticleReader() {
   const { id } = useParams<{ id: string }>()
   const [summary, setSummary] = useState<string | null>(null)
   const [socialPost, setSocialPost] = useState<string | null>(null)
   const [selectedPlatform, setSelectedPlatform] = useState<'twitter' | 'linkedin' | 'reddit'>('twitter')
+  const api = useApiClient()
+  const numericArticleId = id ? Number(id) : null
 
   const { data: article, isLoading } = useQuery(
     ['article', id],
     async () => {
-      const response = await axios.get(`/api/articles/${id}`)
+      if (numericArticleId === null || Number.isNaN(numericArticleId)) {
+        throw new Error('Invalid article id')
+      }
+      const response = await api.get(`/articles/${numericArticleId}`)
       return response.data
     },
     {
       onSuccess: (data) => {
         // Mark as read when article is loaded
         if (!data.readAt) {
-          axios.post(`/api/articles/${id}/read`).catch(console.error)
+          api.post(`/articles/${numericArticleId}/read`).catch(console.error)
         }
-      }
+      },
+      enabled: numericArticleId !== null && !Number.isNaN(numericArticleId)
     }
   )
 
   const summaryMutation = useMutation(
     async () => {
-      const response = await axios.post(`/api/ai/summarize`, {
-        articleId: id
+      if (numericArticleId === null || Number.isNaN(numericArticleId)) {
+        throw new Error('Invalid article id')
+      }
+      const response = await api.post(`/ai/summarize`, {
+        articleId: numericArticleId
       })
       return response.data.summary
     },
@@ -48,8 +57,11 @@ export default function ArticleReader() {
 
   const socialPostMutation = useMutation(
     async (platform: string) => {
-      const response = await axios.post(`/api/ai/social-post`, {
-        articleId: id,
+      if (numericArticleId === null || Number.isNaN(numericArticleId)) {
+        throw new Error('Invalid article id')
+      }
+      const response = await api.post(`/ai/social-post`, {
+        articleId: numericArticleId,
         platform
       })
       return response.data.post
@@ -70,6 +82,9 @@ export default function ArticleReader() {
   }
 
   const handleCopyToClipboard = (text: string) => {
+    if (!text) {
+      return
+    }
     navigator.clipboard.writeText(text)
     toast.success('Copied to clipboard!')
   }
@@ -120,21 +135,23 @@ export default function ArticleReader() {
         <div className="flex items-center space-x-4 text-sm text-gray-600 mb-6">
           <div className="flex items-center">
             <User className="h-4 w-4 mr-1" />
-            {article.feed.title}
+            {article.feed.title || 'Unknown Feed'}
           </div>
           <div className="flex items-center">
             <Clock className="h-4 w-4 mr-1" />
-            {new Date(article.publishedAt).toLocaleDateString()}
+            {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : 'Unknown'}
           </div>
-          <a
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center text-primary-600 hover:text-primary-700"
-          >
-            <ExternalLink className="h-4 w-4 mr-1" />
-            Original Article
-          </a>
+          {article.url && (
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center text-primary-600 hover:text-primary-700"
+            >
+              <ExternalLink className="h-4 w-4 mr-1" />
+              Original Article
+            </a>
+          )}
         </div>
       </div>
 
@@ -142,9 +159,9 @@ export default function ArticleReader() {
         {/* Main Content */}
         <div className="lg:col-span-3">
           <div className="card p-8">
-            {article.description && (
+            {article.summary && (
               <div className="text-lg text-gray-700 mb-6 font-medium">
-                {article.description}
+                {article.summary}
               </div>
             )}
             
@@ -256,13 +273,13 @@ export default function ArticleReader() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-2">
               <button
-                onClick={() => handleCopyToClipboard(article.url)}
+                onClick={() => handleCopyToClipboard(article.url || '')}
                 className="btn btn-outline btn-sm w-full"
               >
                 Copy Link
               </button>
               <button
-                onClick={() => handleCopyToClipboard(article.title)}
+                onClick={() => handleCopyToClipboard(article.title || '')}
                 className="btn btn-outline btn-sm w-full"
               >
                 Copy Title

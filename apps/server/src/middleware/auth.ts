@@ -1,46 +1,26 @@
-import { Request, Response, NextFunction } from 'express';
-import { getAuth } from '@clerk/express';
+import type { Request, Response, NextFunction } from 'express';
+import type { WithAuthProp } from '@clerk/express';
 import { prisma } from '../index';
 import { logger } from '../index';
+import { syncClerkUser } from '../services/users';
 
 export interface AuthenticatedRequest extends Request {
   userId: string;
   user?: any;
 }
 
-export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth = async (req: WithAuthProp<Request>, res: Response, next: NextFunction) => {
   const authReq = req as AuthenticatedRequest;
   try {
-    const { userId } = getAuth(req);
-    
-    if (!userId) {
+    if (!req.auth || !req.auth.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    const userId = req.auth.userId;
     authReq.userId = userId;
-    
-    // Optionally fetch user from database
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
 
-    if (!user) {
-      // Create user if doesn't exist (first time login)
-      const clerkUser = (req as any).auth?.user;
-      if (clerkUser) {
-        const newUser = await prisma.user.create({
-          data: {
-            id: userId,
-            email: clerkUser.emailAddresses[0]?.emailAddress || '',
-            name: clerkUser.fullName || '',
-            tz: clerkUser.publicMetadata?.timezone as string || null
-          }
-        });
-        authReq.user = newUser;
-      }
-    } else {
-      authReq.user = user;
-    }
+    const user = await syncClerkUser(userId);
+    authReq.user = user;
 
     next();
   } catch (error) {
@@ -49,7 +29,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+export const requireAdmin = (req: WithAuthProp<Request>, res: Response, next: NextFunction) => {
   const authReq = req as AuthenticatedRequest;
   if (authReq.user?.email !== 'yash.khivasara@gmail.com') {
     return res.status(403).json({ error: 'Admin access required' });
@@ -57,12 +37,11 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
   next();
 };
 
-export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+export const optionalAuth = async (req: WithAuthProp<Request>, res: Response, next: NextFunction) => {
   const authReq = req as AuthenticatedRequest;
   try {
-    const { userId } = getAuth(req);
-    
-    if (userId) {
+    if (req.auth?.userId) {
+      const userId = req.auth.userId;
       authReq.userId = userId;
       const user = await prisma.user.findUnique({
         where: { id: userId }

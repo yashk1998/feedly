@@ -50,11 +50,26 @@ export const logger = winston.createLogger({
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// trust proxy to ensure secure cookies when behind load balancers
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: (origin, callback) => {
+    const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+      .split(',')
+      .map(o => o.trim());
+
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('CORS origin not allowed'));
+  },
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
 
 // Rate limiting

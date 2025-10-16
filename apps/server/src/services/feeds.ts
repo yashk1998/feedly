@@ -47,7 +47,7 @@ export class FeedService {
       });
 
       // Store initial articles
-      await this.storeArticles(Number(feed.id), feedData.articles);
+      await this.storeArticles(feed.id, feedData.articles);
     }
 
     return feed;
@@ -154,7 +154,7 @@ export class FeedService {
   /**
    * Store articles in database with deduplication
    */
-  async storeArticles(feedId: number, articles: ParsedArticle[]): Promise<void> {
+  async storeArticles(feedId: bigint, articles: ParsedArticle[]): Promise<void> {
     for (const article of articles) {
       const checksum = crypto.createHash('sha256')
         .update(article.title + article.url + article.content)
@@ -199,8 +199,10 @@ export class FeedService {
    * Refresh a feed and update articles
    */
   async refreshFeed(feedId: number): Promise<void> {
+    const feedIdBigInt = BigInt(feedId);
+
     const feed = await prisma.feed.findUnique({
-      where: { id: feedId }
+      where: { id: feedIdBigInt }
     });
 
     if (!feed) {
@@ -212,7 +214,7 @@ export class FeedService {
       
       // Update feed metadata
       await prisma.feed.update({
-        where: { id: feedId },
+        where: { id: feedIdBigInt },
         data: {
           title: feedData.title,
           siteUrl: feedData.siteUrl,
@@ -221,7 +223,7 @@ export class FeedService {
       });
 
       // Store new articles
-      await this.storeArticles(feedId, feedData.articles);
+      await this.storeArticles(feedIdBigInt, feedData.articles);
       
       // Cache the refresh time
       await redis.setEx(`feed:${feedId}:refreshed`, 3600, Date.now().toString());

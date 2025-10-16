@@ -24,36 +24,18 @@ router.get('/', requireAuth, async (req, res) => {
   const authReq = req as AuthenticatedRequest;
   try {
     const userId = authReq.userId;
-    
-    // Get user's personal feeds
-    const personalFeeds = await prisma.subscription.findMany({
+
+    const personalSubscriptions = await prisma.subscription.findMany({
       where: {
         userId,
         teamId: null
       },
       include: {
-        feed: {
-          include: {
-            _count: {
-              select: {
-                articles: {
-                  where: {
-                    reads: {
-                      none: {
-                        userId
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+        feed: true
       }
     });
 
-    // Get team feeds
-    const teamFeeds = await prisma.subscription.findMany({
+    const teamSubscriptions = await prisma.subscription.findMany({
       where: {
         team: {
           members: {
@@ -64,37 +46,74 @@ router.get('/', requireAuth, async (req, res) => {
         }
       },
       include: {
-        feed: {
-          include: {
-            _count: {
-              select: {
-                articles: {
-                  where: {
-                    reads: {
-                      none: {
-                        userId
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+        feed: true
       }
     });
 
-    const feeds = [...personalFeeds, ...teamFeeds].map(sub => ({
-      id: sub.feed.id,
-      url: sub.feed.url,
-      title: sub.feed.title,
-      siteUrl: sub.feed.siteUrl,
-      category: sub.category,
-      unreadCount: sub.feed._count.articles,
-      lastFetched: sub.feed.lastFetchedAt,
-      teamId: sub.teamId,
-      subscriptionId: sub.id
-    }));
+    const allSubscriptions = [...personalSubscriptions, ...teamSubscriptions];
+    const feedIds = Array.from(new Set(allSubscriptions.map((sub) => Number(sub.feedId))));
+
+    let totalArticleCounts: Array<{ feedId: bigint; _count: { _all: number } }> = [];
+    let unreadArticleCounts: Array<{ feedId: bigint; _count: { _all: number } }> = [];
+
+    if (feedIds.length > 0) {
+      [totalArticleCounts, unreadArticleCounts] = await Promise.all([
+        prisma.article.groupBy({
+          by: ['feedId'],
+          where: {
+            feedId: { in: feedIds.map((id) => BigInt(id)) }
+          },
+          _count: {
+            _all: true
+          }
+        }),
+        prisma.article.groupBy({
+          by: ['feedId'],
+          where: {
+            feedId: { in: feedIds.map((id) => BigInt(id)) },
+            reads: {
+              none: {
+                userId
+              }
+            }
+          },
+          _count: {
+            _all: true
+          }
+        })
+      ]);
+    }
+
+    const totalMap = new Map<number, number>(
+      totalArticleCounts.map((entry) => [Number(entry.feedId), entry._count._all])
+    );
+    const unreadMap = new Map<number, number>(
+      unreadArticleCounts.map((entry) => [Number(entry.feedId), entry._count._all])
+    );
+
+    const feeds = allSubscriptions.map((sub) => {
+      const feedId = Number(sub.feedId);
+      const lastFetchedAt = sub.feed.lastFetchedAt ? sub.feed.lastFetchedAt.toISOString() : null;
+      const lastFetchedAgeMs = sub.feed.lastFetchedAt
+        ? Date.now() - sub.feed.lastFetchedAt.getTime()
+        : undefined;
+      const twelveHoursInMs = 12 * 60 * 60 * 1000;
+
+      return {
+        id: feedId,
+        subscriptionId: Number(sub.id),
+        url: sub.feed.url,
+        title: sub.feed.title,
+        siteUrl: sub.feed.siteUrl,
+        category: sub.category || 'General',
+        lastFetchedAt,
+        unreadCount: unreadMap.get(feedId) || 0,
+        totalArticles: totalMap.get(feedId) || 0,
+        isTeamFeed: sub.teamId !== null,
+        isActive:
+          typeof lastFetchedAgeMs === 'number' ? lastFetchedAgeMs < twelveHoursInMs : false
+      };
+    });
 
     res.json({ feeds });
   } catch (error) {
@@ -141,13 +160,40 @@ router.post('/', requireAuth, async (req, res) => {
       }
     });
 
+    const feedId = Number(subscription.feedId);
+    const unreadCount = await prisma.article.count({
+      where: {
+        feedId: subscription.feedId,
+        reads: {
+          none: {
+            userId
+          }
+        }
+      }
+    });
+
+    const totalArticles = await prisma.article.count({
+      where: {
+        feedId: subscription.feedId
+      }
+    });
+
     res.status(201).json({
-      id: subscription.feed.id,
-      url: subscription.feed.url,
-      title: subscription.feed.title,
-      siteUrl: subscription.feed.siteUrl,
-      category: subscription.category,
-      subscriptionId: subscription.id
+      feed: {
+        id: feedId,
+        subscriptionId: Number(subscription.id),
+        url: subscription.feed.url,
+        title: subscription.feed.title,
+        siteUrl: subscription.feed.siteUrl,
+        category: subscription.category || 'General',
+        lastFetchedAt: subscription.feed.lastFetchedAt
+          ? subscription.feed.lastFetchedAt.toISOString()
+          : null,
+        unreadCount,
+        totalArticles,
+        isTeamFeed: false,
+        isActive: true
+      }
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -155,6 +201,46 @@ router.post('/', requireAuth, async (req, res) => {
     }
     logger.error('Error adding feed:', error);
     res.status(500).json({ error: 'Failed to add feed' });
+  }
+});
+
+router.post('/:id/refresh', requireAuth, async (req, res) => {
+  try {
+    const feedId = parseInt(req.params.id, 10);
+    if (Number.isNaN(feedId)) {
+      return res.status(400).json({ error: 'Invalid feed id' });
+    }
+
+    const userId = (req as AuthenticatedRequest).userId;
+
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        feedId: BigInt(feedId),
+        OR: [
+          { userId },
+          {
+            team: {
+              members: {
+                some: {
+                  userId
+                }
+              }
+            }
+          }
+        ]
+      }
+    });
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    await feedService.refreshFeed(feedId);
+
+    res.json({ message: 'Feed refreshed successfully' });
+  } catch (error) {
+    logger.error('Error refreshing feed:', error);
+    res.status(500).json({ error: 'Failed to refresh feed' });
   }
 });
 
@@ -198,11 +284,17 @@ router.put('/:id', requireAuth, async (req, res) => {
     });
 
     res.json({
-      id: updated.feed.id,
-      url: updated.feed.url,
-      title: updated.feed.title,
-      category: updated.category,
-      subscriptionId: updated.id
+      feed: {
+        id: Number(updated.feed.id),
+        subscriptionId: Number(updated.id),
+        url: updated.feed.url,
+        title: updated.feed.title,
+        siteUrl: updated.feed.siteUrl,
+        category: updated.category || 'General',
+        lastFetchedAt: updated.feed.lastFetchedAt
+          ? updated.feed.lastFetchedAt.toISOString()
+          : null
+      }
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

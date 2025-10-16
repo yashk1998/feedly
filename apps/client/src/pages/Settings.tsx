@@ -2,22 +2,23 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { useUser } from '@clerk/clerk-react'
 import { Save, CreditCard, Users, Bell, Shield } from 'lucide-react'
-import axios from 'axios'
 import toast from 'react-hot-toast'
+import { useApiClient } from '../lib/apiClient'
 
 export default function Settings() {
   const { user } = useUser()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState('profile')
+  const api = useApiClient()
 
   const { data: creditUsage } = useQuery('credit-usage', async () => {
-    const response = await axios.get('/api/user/credits')
+    const response = await api.get('/user/credits')
     return response.data
   })
 
   const updateSettingsMutation = useMutation(
     async (settings: any) => {
-      const response = await axios.put('/api/user/settings', settings)
+      const response = await api.put('/user/settings', settings)
       return response.data
     },
     {

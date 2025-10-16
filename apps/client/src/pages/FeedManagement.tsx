@@ -1,20 +1,20 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { Plus, Trash2, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react'
-import axios from 'axios'
 import toast from 'react-hot-toast'
+import { useApiClient } from '../lib/apiClient'
 
 interface Feed {
-  id: string
-  title: string
+  id: number
+  subscriptionId: number
+  title?: string | null
   url: string
-  description: string
-  lastFetchedAt: string
+  siteUrl?: string | null
+  lastFetchedAt: string | null
   isActive: boolean
   category: string
-  _count: {
-    articles: number
-  }
+  unreadCount: number
+  totalArticles: number
 }
 
 export default function FeedManagement() {
@@ -22,16 +22,17 @@ export default function FeedManagement() {
   const [newFeedCategory, setNewFeedCategory] = useState('technology')
   const [isAddingFeed, setIsAddingFeed] = useState(false)
   const queryClient = useQueryClient()
+  const api = useApiClient()
 
   const { data: feeds, isLoading } = useQuery('feeds', async () => {
-    const response = await axios.get('/api/feeds')
-    return response.data
+    const response = await api.get('/feeds')
+    return response.data.feeds as Feed[]
   })
 
   const addFeedMutation = useMutation(
     async (feedData: { url: string; category: string }) => {
-      const response = await axios.post('/api/feeds', feedData)
-      return response.data
+      const response = await api.post('/feeds', feedData)
+      return response.data.feed as Feed
     },
     {
       onSuccess: () => {
@@ -48,8 +49,8 @@ export default function FeedManagement() {
   )
 
   const deleteFeedMutation = useMutation(
-    async (feedId: string) => {
-      await axios.delete(`/api/feeds/${feedId}`)
+    async (subscriptionId: number) => {
+      await api.delete(`/feeds/${subscriptionId}`)
     },
     {
       onSuccess: () => {
@@ -63,8 +64,8 @@ export default function FeedManagement() {
   )
 
   const refreshFeedMutation = useMutation(
-    async (feedId: string) => {
-      await axios.post(`/api/feeds/${feedId}/refresh`)
+    async (feedId: number) => {
+      await api.post(`/feeds/${feedId}/refresh`)
     },
     {
       onSuccess: () => {
@@ -224,12 +225,12 @@ export default function FeedManagement() {
           </div>
         ) : (
           <div className="space-y-4">
-            {feeds?.map((feed: Feed) => (
-              <div key={feed.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+            {feeds?.map((feed) => (
+              <div key={feed.subscriptionId} className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-semibold text-gray-900">{feed.title}</h3>
+                      <h3 className="font-semibold text-gray-900">{feed.title || feed.url}</h3>
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         feed.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                       }`}>
@@ -240,17 +241,13 @@ export default function FeedManagement() {
                       </span>
                     </div>
                     
-                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-                      {feed.description}
-                    </p>
-                    
                     <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span>{feed._count.articles} articles</span>
+                      <span>{feed.totalArticles} articles</span>
                       <span>
-                        Last updated: {new Date(feed.lastFetchedAt).toLocaleDateString()}
+                        Last updated: {feed.lastFetchedAt ? new Date(feed.lastFetchedAt).toLocaleString() : 'Never'}
                       </span>
                       <a
-                        href={feed.url}
+                        href={feed.siteUrl || feed.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center text-primary-600 hover:text-primary-700"
@@ -261,7 +258,7 @@ export default function FeedManagement() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2 ml-4">
+                    <div className="flex items-center space-x-2 ml-4">
                     <button
                       onClick={() => refreshFeedMutation.mutate(feed.id)}
                       disabled={refreshFeedMutation.isLoading}
@@ -273,7 +270,7 @@ export default function FeedManagement() {
                     <button
                       onClick={() => {
                         if (confirm('Are you sure you want to delete this feed?')) {
-                          deleteFeedMutation.mutate(feed.id)
+                          deleteFeedMutation.mutate(feed.subscriptionId)
                         }
                       }}
                       disabled={deleteFeedMutation.isLoading}
