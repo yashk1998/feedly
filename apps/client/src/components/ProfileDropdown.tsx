@@ -171,7 +171,7 @@ export default function ProfileDropdown() {
             </a>
 
             <button
-              onClick={() => signOut({ redirectUrl: '/' })}
+              onClick={() => signOut()}
               className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors group"
             >
               <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-ink-500 dark:text-neutral-400 group-hover:bg-red-100 group-hover:text-red-600 dark:group-hover:bg-red-500/20 dark:group-hover:text-red-400 transition-colors">

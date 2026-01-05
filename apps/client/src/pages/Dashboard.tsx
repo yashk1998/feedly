@@ -12,7 +12,6 @@ import {
   Inbox,
   Filter,
   RefreshCw,
-  BookOpen,
   Bookmark,
   Keyboard
 } from 'lucide-react'
@@ -23,7 +22,7 @@ import { useArticleNavigation } from '../hooks/useKeyboardShortcuts'
 import KeyboardShortcutsModal from '../components/KeyboardShortcutsModal'
 import { AllCaughtUpState, NoFeedsState, NoArticlesState } from '../components/EmptyStates'
 import FeedIcon from '../components/FeedIcon'
-import { ArticleCardSkeleton, SidebarSkeleton } from '../components/Skeleton'
+import { ArticleCardSkeleton } from '../components/Skeleton'
 
 interface Article {
   id: number

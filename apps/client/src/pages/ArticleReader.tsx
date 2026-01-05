@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import DOMPurify from 'dompurify'
-import { formatDistanceToNow, format } from 'date-fns'
+import { format } from 'date-fns'
 import { useApiClient } from '../lib/apiClient'
 import { ArticleReaderSkeleton } from '../components/Skeleton'
 import FeedIcon from '../components/FeedIcon'

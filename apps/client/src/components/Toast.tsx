@@ -3,25 +3,14 @@ import { Toaster, Toast, toast, resolveValue } from 'react-hot-toast'
 import {
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Info,
   Loader2,
-  X,
-  Sparkles,
-  Bookmark,
-  Copy,
-  Trash2
+  X
 } from 'lucide-react'
 
-// Custom icon mapping based on toast type or custom icon
-function ToastIcon({ type, icon }: { type: string; icon?: string }) {
+// Custom icon mapping based on toast type
+function ToastIcon({ type }: { type: string }) {
   const iconClass = "w-5 h-5 flex-shrink-0"
-
-  // Custom icons for specific actions
-  if (icon === 'sparkles') return <Sparkles className={`${iconClass} text-amber-500`} />
-  if (icon === 'bookmark') return <Bookmark className={`${iconClass} text-coral-500 fill-current`} />
-  if (icon === 'copy') return <Copy className={`${iconClass} text-blue-500`} />
-  if (icon === 'trash') return <Trash2 className={`${iconClass} text-red-500`} />
 
   switch (type) {
     case 'success':
@@ -72,7 +61,7 @@ function ProgressBar({ duration, paused }: { duration: number; paused: boolean }
 }
 
 // Individual toast component
-function CustomToast({ t, icon }: { t: Toast; icon?: string }) {
+function CustomToast({ t }: { t: Toast }) {
   const [isHovered, setIsHovered] = useState(false)
 
   return (
@@ -94,7 +83,7 @@ function CustomToast({ t, icon }: { t: Toast; icon?: string }) {
     >
       <div className="flex items-start gap-3 p-4">
         {/* Icon */}
-        <ToastIcon type={t.type || 'blank'} icon={icon} />
+        <ToastIcon type={t.type || 'blank'} />
 
         {/* Content */}
         <div className="flex-1 min-w-0 pt-0.5">
@@ -148,75 +137,4 @@ export default function CustomToaster() {
       {(t) => <CustomToast t={t} />}
     </Toaster>
   )
-}
-
-// Custom toast functions with enhanced styling
-export const customToast = {
-  success: (message: string) => {
-    return toast.success(message, {
-      duration: 3000,
-    })
-  },
-
-  error: (message: string) => {
-    return toast.error(message, {
-      duration: 5000,
-    })
-  },
-
-  loading: (message: string) => {
-    return toast.loading(message)
-  },
-
-  info: (message: string) => {
-    return toast(message, {
-      duration: 4000,
-    })
-  },
-
-  // Special toasts for specific actions
-  saved: (message: string = 'Saved for later') => {
-    return toast.success(message, {
-      duration: 2500,
-      icon: '🔖',
-    })
-  },
-
-  copied: (message: string = 'Copied to clipboard') => {
-    return toast.success(message, {
-      duration: 2000,
-      icon: '📋',
-    })
-  },
-
-  deleted: (message: string = 'Successfully deleted') => {
-    return toast.success(message, {
-      duration: 2500,
-      icon: '🗑️',
-    })
-  },
-
-  aiGenerated: (message: string = 'AI content generated') => {
-    return toast.success(message, {
-      duration: 3000,
-      icon: '✨',
-    })
-  },
-
-  // Promise toast for async operations
-  promise: <T,>(
-    promise: Promise<T>,
-    messages: {
-      loading: string
-      success: string | ((data: T) => string)
-      error: string | ((err: any) => string)
-    }
-  ) => {
-    return toast.promise(promise, messages)
-  },
-
-  // Dismiss all toasts
-  dismissAll: () => {
-    toast.dismiss()
-  },
 }
