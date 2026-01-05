@@ -7,8 +7,11 @@ import LandingPage from './pages/LandingPage'
 import Dashboard from './pages/Dashboard'
 import FeedManagement from './pages/FeedManagement'
 import ArticleReader from './pages/ArticleReader'
+import SavedArticles from './pages/SavedArticles'
 import Settings from './pages/Settings'
 import Pricing from './pages/Pricing'
+import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
 
 // Components
 import Navbar from './components/Navbar'
@@ -34,6 +37,8 @@ function App() {
               {/* Public routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
               
               {/* Protected routes */}
               <Route path="/dashboard" element={
@@ -49,6 +54,11 @@ function App() {
               <Route path="/article/:id" element={
                 <ProtectedRoute>
                   <ArticleReader />
+                </ProtectedRoute>
+              } />
+              <Route path="/saved" element={
+                <ProtectedRoute>
+                  <SavedArticles />
                 </ProtectedRoute>
               } />
               <Route path="/settings" element={

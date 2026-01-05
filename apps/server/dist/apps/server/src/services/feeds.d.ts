@@ -14,29 +14,39 @@ interface ParsedArticle {
 }
 export declare class FeedService {
     /**
+     * Fetch full article content from URL using multiple strategies
+     * Priority: 1) Direct fetch with browser headers, 2) Retry with different UA
+     */
+    fetchFullArticleContent(url: string): Promise<{
+        content: string;
+        excerpt: string;
+    } | null>;
+    /**
      * Get or create a feed in the database
      */
     getOrCreateFeed(url: string): Promise<{
-        id: bigint;
-        createdAt: Date;
-        updatedAt: Date;
         url: string;
+        id: bigint;
         title: string | null;
         siteUrl: string | null;
         lastFetchedAt: Date | null;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     /**
      * Parse RSS/Atom feed from URL
+     * Extracts content:encoded if available for full article content
      */
     parseFeed(url: string): Promise<ParsedFeed>;
     /**
-     * Scrape website content using readability
+     * Scrape website content using readability with realistic headers
      */
     scrapeWebsite(url: string): Promise<ParsedFeed>;
     /**
      * Store articles in database with deduplication
+     * fetchFullContent: whether to fetch full article from URL (slower but more content)
      */
-    storeArticles(feedId: number, articles: ParsedArticle[]): Promise<void>;
+    storeArticles(feedId: bigint, articles: ParsedArticle[], fetchFullContent?: boolean): Promise<void>;
     /**
      * Refresh a feed and update articles
      */

@@ -8,13 +8,16 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const client_1 = require("@prisma/client");
 const redis_1 = require("redis");
 const express_2 = require("@clerk/express");
 const winston_1 = __importDefault(require("winston"));
+const node_cron_1 = __importDefault(require("node-cron"));
+const feeds_1 = require("./services/feeds");
 // Import routes
-const feeds_1 = __importDefault(require("./routes/feeds"));
+const feeds_2 = __importDefault(require("./routes/feeds"));
 const articles_1 = __importDefault(require("./routes/articles"));
 const ai_1 = __importDefault(require("./routes/ai"));
 const teams_1 = __importDefault(require("./routes/teams"));
@@ -22,6 +25,7 @@ const payments_1 = __importDefault(require("./routes/payments"));
 const analytics_1 = __importDefault(require("./routes/analytics"));
 const admin_1 = __importDefault(require("./routes/admin"));
 // Load environment variables
+dotenv_1.default.config({ path: path_1.default.resolve(__dirname, '../../.env') });
 dotenv_1.default.config();
 // Initialize Prisma
 exports.prisma = new client_1.PrismaClient();
@@ -43,11 +47,23 @@ exports.logger = winston_1.default.createLogger({
 });
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
+// trust proxy to ensure secure cookies when behind load balancers
+app.set('trust proxy', 1);
 // Security middleware
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true
+    origin: (origin, callback) => {
+        const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
+            .split(',')
+            .map(o => o.trim());
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('CORS origin not allowed'));
+    },
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
 // Rate limiting
 const limiter = (0, express_rate_limit_1.default)({
@@ -66,7 +82,7 @@ app.get('/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 // API routes
-app.use('/api/feeds', feeds_1.default);
+app.use('/api/feeds', feeds_2.default);
 app.use('/api/articles', articles_1.default);
 app.use('/api/ai', ai_1.default);
 app.use('/api/teams', teams_1.default);
@@ -85,15 +101,57 @@ app.use((err, req, res, next) => {
 app.use('*', (req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
+// Background feed sync job
+function setupFeedSyncCron() {
+    // Run every hour at minute 0
+    node_cron_1.default.schedule('0 * * * *', async () => {
+        exports.logger.info('Starting scheduled feed sync...');
+        try {
+            // Get all feeds that need refreshing (older than 1 hour)
+            const feedsToRefresh = await feeds_1.feedService.getFeedsToRefresh('paid');
+            exports.logger.info(`Found ${feedsToRefresh.length} feeds to refresh`);
+            // Process feeds in batches to avoid overwhelming the system
+            const batchSize = 10;
+            for (let i = 0; i < feedsToRefresh.length; i += batchSize) {
+                const batch = feedsToRefresh.slice(i, i + batchSize);
+                await Promise.allSettled(batch.map(async (feedId) => {
+                    try {
+                        await feeds_1.feedService.refreshFeed(feedId);
+                        exports.logger.debug(`Refreshed feed ${feedId}`);
+                    }
+                    catch (error) {
+                        exports.logger.error(`Failed to refresh feed ${feedId}:`, error);
+                    }
+                }));
+                // Small delay between batches to be nice to external servers
+                if (i + batchSize < feedsToRefresh.length) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            exports.logger.info('Completed scheduled feed sync');
+        }
+        catch (error) {
+            exports.logger.error('Error during scheduled feed sync:', error);
+        }
+    });
+    exports.logger.info('Feed sync cron job scheduled (runs every hour)');
+}
 // Start server
 async function startServer() {
     try {
-        // Connect to Redis
-        await exports.redis.connect();
-        exports.logger.info('Connected to Redis');
+        // Connect to Redis (optional)
+        try {
+            await exports.redis.connect();
+            exports.logger.info('Connected to Redis');
+        }
+        catch (redisError) {
+            exports.logger.warn('Redis connection failed, continuing without Redis:', redisError);
+        }
         // Test database connection
         await exports.prisma.$connect();
         exports.logger.info('Connected to database');
+        // Setup background feed sync
+        setupFeedSyncCron();
         app.listen(PORT, () => {
             exports.logger.info(`Server running on port ${PORT}`);
         });
@@ -107,13 +165,23 @@ async function startServer() {
 process.on('SIGTERM', async () => {
     exports.logger.info('SIGTERM received, shutting down gracefully');
     await exports.prisma.$disconnect();
-    await exports.redis.disconnect();
+    try {
+        await exports.redis.disconnect();
+    }
+    catch (error) {
+        exports.logger.warn('Redis disconnect failed:', error);
+    }
     process.exit(0);
 });
 process.on('SIGINT', async () => {
     exports.logger.info('SIGINT received, shutting down gracefully');
     await exports.prisma.$disconnect();
-    await exports.redis.disconnect();
+    try {
+        await exports.redis.disconnect();
+    }
+    catch (error) {
+        exports.logger.warn('Redis disconnect failed:', error);
+    }
     process.exit(0);
 });
 startServer();

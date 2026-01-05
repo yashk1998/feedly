@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import FeedParser from 'feedparser';
 import { JSDOM } from 'jsdom';
 import { Readability } from '@mozilla/readability';
@@ -23,8 +23,117 @@ interface ParsedArticle {
   content: string;
 }
 
+// Realistic browser User-Agents (rotate to avoid detection)
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+];
+
+// Get random User-Agent
+function getRandomUserAgent(): string {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+}
+
+// Get realistic browser headers
+function getBrowserHeaders(url: string): Record<string, string> {
+  const urlObj = new URL(url);
+  return {
+    'User-Agent': getRandomUserAgent(),
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'DNT': '1',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Cache-Control': 'max-age=0',
+    'Referer': `${urlObj.protocol}//${urlObj.host}/`,
+  };
+}
+
+// Clean and normalize HTML content
+function cleanHtmlContent(html: string): string {
+  if (!html) return '';
+
+  // Remove script and style tags
+  let cleaned = html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+
+  return cleaned.trim();
+}
+
+// Check if content is substantial (not just a teaser)
+function isContentSubstantial(content: string | null | undefined): boolean {
+  if (!content) return false;
+  const textContent = content.replace(/<[^>]*>/g, '').trim();
+  return textContent.length > 500;
+}
+
 export class FeedService {
-  
+
+  /**
+   * Fetch full article content from URL using multiple strategies
+   * Priority: 1) Direct fetch with browser headers, 2) Retry with different UA
+   */
+  async fetchFullArticleContent(url: string): Promise<{ content: string; excerpt: string } | null> {
+    const strategies = [
+      { name: 'chrome', headers: getBrowserHeaders(url) },
+      { name: 'firefox', headers: { ...getBrowserHeaders(url), 'User-Agent': USER_AGENTS[2] } },
+      { name: 'safari', headers: { ...getBrowserHeaders(url), 'User-Agent': USER_AGENTS[3] } },
+    ];
+
+    for (const strategy of strategies) {
+      try {
+        logger.debug(`Trying ${strategy.name} strategy for ${url}`);
+
+        const config: AxiosRequestConfig = {
+          timeout: 20000,
+          headers: strategy.headers,
+          maxRedirects: 5,
+          validateStatus: (status) => status < 400,
+          // Handle compressed responses
+          decompress: true,
+        };
+
+        const response = await axios.get(url, config);
+
+        if (!response.data || typeof response.data !== 'string') {
+          logger.debug(`Empty or invalid response from ${url}`);
+          continue;
+        }
+
+        const dom = new JSDOM(response.data, { url });
+        const reader = new Readability(dom.window.document, {
+          charThreshold: 100, // Lower threshold to capture more content
+        });
+        const article = reader.parse();
+
+        if (article && article.content && isContentSubstantial(article.content)) {
+          logger.info(`Successfully extracted content from ${url} using ${strategy.name}`);
+          return {
+            content: cleanHtmlContent(article.content),
+            excerpt: article.excerpt || ''
+          };
+        }
+      } catch (error) {
+        const errorMsg = (error as Error).message;
+        logger.debug(`Strategy ${strategy.name} failed for ${url}: ${errorMsg}`);
+        // Continue to next strategy
+      }
+    }
+
+    logger.warn(`All extraction strategies failed for ${url}`);
+    return null;
+  }
+
   /**
    * Get or create a feed in the database
    */
@@ -36,7 +145,7 @@ export class FeedService {
     if (!feed) {
       // Validate and parse the feed first
       const feedData = await this.parseFeed(url);
-      
+
       feed = await prisma.feed.create({
         data: {
           url,
@@ -46,8 +155,8 @@ export class FeedService {
         }
       });
 
-      // Store initial articles
-      await this.storeArticles(feed.id, feedData.articles);
+      // Store initial articles (don't fetch full content on initial load for speed)
+      await this.storeArticles(feed.id, feedData.articles, false);
     }
 
     return feed;
@@ -55,23 +164,27 @@ export class FeedService {
 
   /**
    * Parse RSS/Atom feed from URL
+   * Extracts content:encoded if available for full article content
    */
   async parseFeed(url: string): Promise<ParsedFeed> {
     try {
       const response = await axios.get(url, {
         timeout: 30000,
         headers: {
-          'User-Agent': 'rivsy RSS Reader/1.0'
+          'User-Agent': getRandomUserAgent(),
+          'Accept': 'application/rss+xml, application/xml, text/xml, application/atom+xml, */*',
         }
       });
 
       return new Promise((resolve, reject) => {
-        const feedparser = new FeedParser({});
+        const feedparser = new FeedParser({
+          addmeta: true, // Include meta in each article
+        });
         const articles: ParsedArticle[] = [];
         let feedMeta: any = {};
 
         feedparser.on('error', reject);
-        
+
         feedparser.on('meta', (meta: any) => {
           feedMeta = meta;
         });
@@ -79,14 +192,44 @@ export class FeedService {
         feedparser.on('readable', function(this: any) {
           let item = this.read();
           while (item) {
+            // Extract content from multiple possible fields
+            // Priority: content:encoded > content > description > summary
+            let fullContent = '';
+            let summary = '';
+
+            // Check for content:encoded (RSS 1.0/2.0 with content module)
+            // feedparser normalizes this to item['content:encoded'] or in item['rss:content:encoded']
+            const contentEncoded =
+              item['content:encoded']?.['#'] ||
+              item['content:encoded'] ||
+              (item['content'] && item['content']['#']) ||
+              '';
+
+            // Get description/summary
+            const description = item.description || '';
+            const itemSummary = item.summary || '';
+
+            // Determine best content source
+            if (contentEncoded && contentEncoded.length > 200) {
+              // content:encoded typically has full article
+              fullContent = cleanHtmlContent(contentEncoded);
+              summary = itemSummary || description.substring(0, 500);
+            } else if (description && description.length > itemSummary.length) {
+              fullContent = cleanHtmlContent(description);
+              summary = itemSummary || description.substring(0, 300);
+            } else {
+              fullContent = cleanHtmlContent(itemSummary || description);
+              summary = description || itemSummary;
+            }
+
             articles.push({
               guid: item.guid || item.link || crypto.randomUUID(),
               title: item.title || 'Untitled',
-              url: item.link || '',
-              publishedAt: item.date || new Date(),
-              author: item.author,
-              summary: item.summary || item.description || '',
-              content: item.description || item.summary || ''
+              url: item.link || item.origlink || '',
+              publishedAt: item.date || item.pubdate || new Date(),
+              author: item.author || item['dc:creator']?.['#'] || item['dc:creator'] || undefined,
+              summary: summary.substring(0, 1000), // Limit summary length
+              content: fullContent
             });
             item = this.read();
           }
@@ -106,7 +249,7 @@ export class FeedService {
 
     } catch (error) {
       logger.error(`Failed to parse feed ${url}:`, error);
-      
+
       // Fallback to web scraping with readability
       try {
         return await this.scrapeWebsite(url);
@@ -118,14 +261,12 @@ export class FeedService {
   }
 
   /**
-   * Scrape website content using readability
+   * Scrape website content using readability with realistic headers
    */
   async scrapeWebsite(url: string): Promise<ParsedFeed> {
     const response = await axios.get(url, {
       timeout: 30000,
-      headers: {
-        'User-Agent': 'rivsy RSS Reader/1.0'
-      }
+      headers: getBrowserHeaders(url),
     });
 
     const dom = new JSDOM(response.data, { url });
@@ -146,18 +287,20 @@ export class FeedService {
         publishedAt: new Date(),
         author: article.byline || undefined,
         summary: article.excerpt || '',
-        content: article.content || ''
+        content: cleanHtmlContent(article.content || '')
       }]
     };
   }
 
   /**
    * Store articles in database with deduplication
+   * fetchFullContent: whether to fetch full article from URL (slower but more content)
    */
-  async storeArticles(feedId: bigint, articles: ParsedArticle[]): Promise<void> {
+  async storeArticles(feedId: bigint, articles: ParsedArticle[], fetchFullContent: boolean = false): Promise<void> {
     for (const article of articles) {
+      // Use URL for checksum to properly detect duplicates
       const checksum = crypto.createHash('sha256')
-        .update(article.title + article.url + article.content)
+        .update(article.url || article.title + article.guid)
         .digest('hex');
 
       // Check for global deduplication
@@ -170,6 +313,21 @@ export class FeedService {
         continue;
       }
 
+      let fullContent = article.content;
+      let summary = article.summary;
+
+      // Only fetch full content if explicitly enabled AND current content is not substantial
+      if (fetchFullContent && article.url && !isContentSubstantial(fullContent)) {
+        const extracted = await this.fetchFullArticleContent(article.url);
+        if (extracted && isContentSubstantial(extracted.content)) {
+          fullContent = extracted.content;
+          if (!summary || summary.length < 50) {
+            summary = extracted.excerpt || summary;
+          }
+          logger.debug(`Extracted full content for: ${article.title}`);
+        }
+      }
+
       try {
         await prisma.article.create({
           data: {
@@ -179,11 +337,12 @@ export class FeedService {
             url: article.url,
             publishedAt: article.publishedAt,
             author: article.author,
-            summaryHtml: article.summary,
-            contentHtml: article.content,
+            summaryHtml: summary,
+            contentHtml: fullContent,
             checksum
           }
         });
+        logger.debug(`Stored article: ${article.title}`);
       } catch (error) {
         // Handle duplicate guid for same feed
         if ((error as any).code === 'P2002') {
@@ -211,7 +370,7 @@ export class FeedService {
 
     try {
       const feedData = await this.parseFeed(feed.url);
-      
+
       // Update feed metadata
       await prisma.feed.update({
         where: { id: feedIdBigInt },
@@ -222,12 +381,12 @@ export class FeedService {
         }
       });
 
-      // Store new articles
-      await this.storeArticles(feedIdBigInt, feedData.articles);
-      
+      // Store new articles (don't fetch full content during refresh for speed)
+      await this.storeArticles(feedIdBigInt, feedData.articles, false);
+
       // Cache the refresh time
       await redis.setEx(`feed:${feedId}:refreshed`, 3600, Date.now().toString());
-      
+
       logger.info(`Successfully refreshed feed ${feedId} (${feed.url})`);
     } catch (error) {
       logger.error(`Failed to refresh feed ${feedId}:`, error);
@@ -259,4 +418,4 @@ export class FeedService {
   }
 }
 
-export const feedService = new FeedService(); 
+export const feedService = new FeedService();

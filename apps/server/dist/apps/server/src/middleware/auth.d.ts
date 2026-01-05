@@ -1,7 +1,11 @@
-import { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 export interface AuthenticatedRequest extends Request {
     userId: string;
     user?: any;
+    auth?: {
+        userId?: string;
+        sessionId?: string;
+    };
 }
 export declare const requireAuth: (req: Request, res: Response, next: NextFunction) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const requireAdmin: (req: Request, res: Response, next: NextFunction) => Response<any, Record<string, any>> | undefined;

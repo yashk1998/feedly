@@ -8,7 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build:common": "cd packages/common && npm run build",
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "cd apps/server && npm run dev",
     "dev:client": "cd apps/client && npm run dev",
     "build": "npm run build:server && npm run build:client",

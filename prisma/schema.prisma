@@ -47,6 +47,7 @@ model User {
   memberships   TeamMember[]
   subscriptions Subscription[]
   reads         ArticleRead[]
+  savedArticles SavedArticle[]
   aiCredits     AiCredits[]
   socialTokens  SocialToken[]
   payments      Payment[]
@@ -116,8 +117,9 @@ model Article {
   checksum    String    @db.Char(64)
   createdAt   DateTime  @default(now()) @map("created_at")
 
-  feed  Feed          @relation(fields: [feedId], references: [id])
-  reads ArticleRead[]
+  feed          Feed           @relation(fields: [feedId], references: [id])
+  reads         ArticleRead[]
+  savedArticles SavedArticle[]
 
   @@unique([feedId, guid])
   @@index([checksum])
@@ -128,6 +130,17 @@ model ArticleRead {
   articleId BigInt   @map("article_id")
   userId    String   @map("user_id")
   readAt    DateTime @default(now()) @map("read_at")
+
+  article Article @relation(fields: [articleId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@id([articleId, userId])
+}
+
+model SavedArticle {
+  articleId BigInt   @map("article_id")
+  userId    String   @map("user_id")
+  savedAt   DateTime @default(now()) @map("saved_at")
 
   article Article @relation(fields: [articleId], references: [id])
   user    User    @relation(fields: [userId], references: [id])

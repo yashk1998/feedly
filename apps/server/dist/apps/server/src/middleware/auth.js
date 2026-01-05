@@ -1,39 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.optionalAuth = exports.requireAdmin = exports.requireAuth = void 0;
-const express_1 = require("@clerk/express");
 const index_1 = require("../index");
 const index_2 = require("../index");
+const users_1 = require("../services/users");
 const requireAuth = async (req, res, next) => {
+    const clerkReq = req;
     const authReq = req;
     try {
-        const { userId } = (0, express_1.getAuth)(req);
-        if (!userId) {
+        if (!clerkReq.auth || !clerkReq.auth.userId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
+        const userId = clerkReq.auth.userId;
         authReq.userId = userId;
-        // Optionally fetch user from database
-        const user = await index_1.prisma.user.findUnique({
-            where: { id: userId }
-        });
-        if (!user) {
-            // Create user if doesn't exist (first time login)
-            const clerkUser = req.auth?.user;
-            if (clerkUser) {
-                const newUser = await index_1.prisma.user.create({
-                    data: {
-                        id: userId,
-                        email: clerkUser.emailAddresses[0]?.emailAddress || '',
-                        name: clerkUser.fullName || '',
-                        tz: clerkUser.publicMetadata?.timezone || null
-                    }
-                });
-                authReq.user = newUser;
-            }
-        }
-        else {
-            authReq.user = user;
-        }
+        const user = await (0, users_1.syncClerkUser)(userId);
+        authReq.user = user;
         next();
     }
     catch (error) {
@@ -51,10 +32,11 @@ const requireAdmin = (req, res, next) => {
 };
 exports.requireAdmin = requireAdmin;
 const optionalAuth = async (req, res, next) => {
+    const clerkReq = req;
     const authReq = req;
     try {
-        const { userId } = (0, express_1.getAuth)(req);
-        if (userId) {
+        if (clerkReq.auth?.userId) {
+            const userId = clerkReq.auth.userId;
             authReq.userId = userId;
             const user = await index_1.prisma.user.findUnique({
                 where: { id: userId }

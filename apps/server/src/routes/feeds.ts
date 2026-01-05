@@ -1,9 +1,17 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { JSDOM } from 'jsdom';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 import { prisma } from '../index';
 import { logger } from '../index';
 import { feedService } from '../services/feeds';
+
+interface OPMLOutline {
+  title: string;
+  xmlUrl: string;
+  htmlUrl?: string;
+  category?: string;
+}
 
 const router = Router();
 
@@ -128,7 +136,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.post('/', requireAuth, async (req, res) => {
   try {
     const { url, category } = addFeedSchema.parse(req.body);
-    const userId = (req as AuthenticatedRequest).userId;
+    const userId = (req as unknown as AuthenticatedRequest).userId;
 
     // Check if user already subscribed
     const existingSubscription = await prisma.subscription.findFirst({
@@ -211,7 +219,7 @@ router.post('/:id/refresh', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid feed id' });
     }
 
-    const userId = (req as AuthenticatedRequest).userId;
+    const userId = (req as unknown as AuthenticatedRequest).userId;
 
     const subscription = await prisma.subscription.findFirst({
       where: {
@@ -251,7 +259,7 @@ router.put('/:id', requireAuth, async (req, res) => {
   try {
     const subscriptionId = parseInt(req.params.id);
     const { category } = updateFeedSchema.parse(req.body);
-    const userId = (req as AuthenticatedRequest).userId;
+    const userId = (req as unknown as AuthenticatedRequest).userId;
 
     // Check if user owns this subscription
     const subscription = await prisma.subscription.findFirst({
@@ -311,7 +319,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
     const subscriptionId = parseInt(req.params.id);
-    const userId = (req as AuthenticatedRequest).userId;
+    const userId = (req as unknown as AuthenticatedRequest).userId;
 
     // Check if user owns this subscription
     const subscription = await prisma.subscription.findFirst({
@@ -345,6 +353,119 @@ router.delete('/:id', requireAuth, async (req, res) => {
   } catch (error) {
     logger.error('Error deleting feed:', error);
     res.status(500).json({ error: 'Failed to unsubscribe' });
+  }
+});
+
+/**
+ * POST /api/feeds/import-opml - Import feeds from OPML file
+ */
+router.post('/import-opml', requireAuth, async (req, res) => {
+  try {
+    const { opmlContent } = req.body;
+    const userId = (req as unknown as AuthenticatedRequest).userId;
+
+    if (!opmlContent || typeof opmlContent !== 'string') {
+      return res.status(400).json({ error: 'OPML content is required' });
+    }
+
+    // Parse OPML XML
+    const dom = new JSDOM(opmlContent, { contentType: 'text/xml' });
+    const doc = dom.window.document;
+
+    // Extract all outline elements with xmlUrl (these are feed entries)
+    const outlines = doc.querySelectorAll('outline[xmlUrl]');
+    const feedsToImport: OPMLOutline[] = [];
+
+    outlines.forEach((outline) => {
+      const xmlUrl = outline.getAttribute('xmlUrl');
+      if (xmlUrl) {
+        // Get category from parent outline if it exists
+        const parentOutline = outline.parentElement;
+        let category = 'General';
+        if (parentOutline && parentOutline.tagName === 'outline' && !parentOutline.hasAttribute('xmlUrl')) {
+          category = parentOutline.getAttribute('title') || parentOutline.getAttribute('text') || 'General';
+        }
+
+        feedsToImport.push({
+          title: outline.getAttribute('title') || outline.getAttribute('text') || '',
+          xmlUrl,
+          htmlUrl: outline.getAttribute('htmlUrl') || undefined,
+          category
+        });
+      }
+    });
+
+    if (feedsToImport.length === 0) {
+      return res.status(400).json({ error: 'No valid feeds found in OPML file' });
+    }
+
+    // Import feeds
+    const results = {
+      imported: 0,
+      skipped: 0,
+      failed: 0,
+      feeds: [] as Array<{ url: string; title: string; status: string }>
+    };
+
+    for (const feedData of feedsToImport) {
+      try {
+        // Check if user already subscribed
+        const existingSubscription = await prisma.subscription.findFirst({
+          where: {
+            userId,
+            teamId: null,
+            feed: {
+              url: feedData.xmlUrl
+            }
+          }
+        });
+
+        if (existingSubscription) {
+          results.skipped++;
+          results.feeds.push({
+            url: feedData.xmlUrl,
+            title: feedData.title,
+            status: 'skipped'
+          });
+          continue;
+        }
+
+        // Get or create feed
+        const feed = await feedService.getOrCreateFeed(feedData.xmlUrl);
+
+        // Create subscription
+        await prisma.subscription.create({
+          data: {
+            userId,
+            feedId: feed.id,
+            category: feedData.category
+          }
+        });
+
+        results.imported++;
+        results.feeds.push({
+          url: feedData.xmlUrl,
+          title: feed.title || feedData.title,
+          status: 'imported'
+        });
+      } catch (error) {
+        logger.error(`Failed to import feed ${feedData.xmlUrl}:`, error);
+        results.failed++;
+        results.feeds.push({
+          url: feedData.xmlUrl,
+          title: feedData.title,
+          status: 'failed'
+        });
+      }
+    }
+
+    res.json({
+      message: `Imported ${results.imported} feeds, skipped ${results.skipped} existing, ${results.failed} failed`,
+      results
+    });
+  } catch (error) {
+    logger.error('Error importing OPML:', error);
+    res.status(500).json({ error: 'Failed to import OPML file' });
   }
 });
 

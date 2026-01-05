@@ -16,6 +16,7 @@ export declare class AIService {
     private azureOpenAIEndpoint;
     private azureOpenAIKey;
     private deploymentName;
+    private deploymentVersion;
     constructor();
     private callAzureOpenAI;
     /**

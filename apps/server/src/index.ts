@@ -8,6 +8,8 @@ import { PrismaClient } from '@prisma/client';
 import { createClient } from 'redis';
 import { clerkMiddleware } from '@clerk/express';
 import winston from 'winston';
+import cron from 'node-cron';
+import { feedService } from './services/feeds';
 
 // Import routes
 import feedRoutes from './routes/feeds';
@@ -115,6 +117,49 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
+// Background feed sync job
+function setupFeedSyncCron() {
+  // Run every hour at minute 0
+  cron.schedule('0 * * * *', async () => {
+    logger.info('Starting scheduled feed sync...');
+
+    try {
+      // Get all feeds that need refreshing (older than 1 hour)
+      const feedsToRefresh = await feedService.getFeedsToRefresh('paid');
+
+      logger.info(`Found ${feedsToRefresh.length} feeds to refresh`);
+
+      // Process feeds in batches to avoid overwhelming the system
+      const batchSize = 10;
+      for (let i = 0; i < feedsToRefresh.length; i += batchSize) {
+        const batch = feedsToRefresh.slice(i, i + batchSize);
+
+        await Promise.allSettled(
+          batch.map(async (feedId) => {
+            try {
+              await feedService.refreshFeed(feedId);
+              logger.debug(`Refreshed feed ${feedId}`);
+            } catch (error) {
+              logger.error(`Failed to refresh feed ${feedId}:`, error);
+            }
+          })
+        );
+
+        // Small delay between batches to be nice to external servers
+        if (i + batchSize < feedsToRefresh.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      logger.info('Completed scheduled feed sync');
+    } catch (error) {
+      logger.error('Error during scheduled feed sync:', error);
+    }
+  });
+
+  logger.info('Feed sync cron job scheduled (runs every hour)');
+}
+
 // Start server
 async function startServer() {
   try {
@@ -129,6 +174,9 @@ async function startServer() {
     // Test database connection
     await prisma.$connect();
     logger.info('Connected to database');
+
+    // Setup background feed sync
+    setupFeedSyncCron();
 
     app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);

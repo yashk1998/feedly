@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 import { prisma } from '../index';
 import { logger } from '../index';
+import { feedService } from '../services/feeds';
 
 const router = Router();
 
@@ -93,6 +94,10 @@ router.get('/', requireAuth, async (req, res) => {
         reads: {
           where: { userId },
           select: { readAt: true }
+        },
+        savedArticles: {
+          where: { userId },
+          select: { savedAt: true }
         }
       },
       orderBy: {
@@ -118,7 +123,9 @@ router.get('/', requireAuth, async (req, res) => {
         siteUrl: article.feed.siteUrl
       },
       isRead: article.reads.length > 0,
-      readAt: article.reads[0]?.readAt || null
+      readAt: article.reads[0]?.readAt || null,
+      isSaved: article.savedArticles.length > 0,
+      savedAt: article.savedArticles[0]?.savedAt || null
     }));
 
     res.json({
@@ -143,7 +150,7 @@ router.get('/', requireAuth, async (req, res) => {
  * GET /api/articles/:id - Get single article
  */
 router.get('/:id', requireAuth, async (req, res) => {
-  const authReq = req as AuthenticatedRequest;
+  const authReq = req as unknown as AuthenticatedRequest;
   try {
     const articleId = parseInt(req.params.id, 10);
     if (Number.isNaN(articleId)) {
@@ -183,6 +190,10 @@ router.get('/:id', requireAuth, async (req, res) => {
         reads: {
           where: { userId },
           select: { readAt: true }
+        },
+        savedArticles: {
+          where: { userId },
+          select: { savedAt: true }
         }
       }
     });
@@ -214,7 +225,9 @@ router.get('/:id', requireAuth, async (req, res) => {
         siteUrl: article.feed.siteUrl
       },
       isRead: true,
-      readAt: article.reads[0]?.readAt || new Date()
+      readAt: article.reads[0]?.readAt || new Date(),
+      isSaved: article.savedArticles.length > 0,
+      savedAt: article.savedArticles[0]?.savedAt || null
     });
   } catch (error) {
     logger.error('Error fetching article:', error);
@@ -300,7 +313,7 @@ router.post('/mark-read', requireAuth, async (req, res) => {
  * POST /api/articles/:id/unread - Mark article as unread
  */
 router.post('/:id/unread', requireAuth, async (req, res) => {
-  const authReq = req as AuthenticatedRequest;
+  const authReq = req as unknown as AuthenticatedRequest;
   try {
     const articleId = parseInt(req.params.id, 10);
     if (Number.isNaN(articleId)) {
@@ -324,6 +337,149 @@ router.post('/:id/unread', requireAuth, async (req, res) => {
 });
 
 /**
+ * GET /api/articles/saved - Get saved articles
+ */
+router.get('/saved', requireAuth, async (req, res) => {
+  const authReq = req as unknown as AuthenticatedRequest;
+  try {
+    const userId = authReq.userId;
+
+    const savedArticles = await prisma.savedArticle.findMany({
+      where: { userId },
+      include: {
+        article: {
+          include: {
+            feed: {
+              select: {
+                id: true,
+                title: true,
+                siteUrl: true
+              }
+            },
+            reads: {
+              where: { userId },
+              select: { readAt: true }
+            }
+          }
+        }
+      },
+      orderBy: {
+        savedAt: 'desc'
+      }
+    });
+
+    const formattedArticles = savedArticles.map((saved) => ({
+      id: Number(saved.article.id),
+      title: saved.article.title,
+      url: saved.article.url,
+      publishedAt: saved.article.publishedAt,
+      author: saved.article.author,
+      summary: saved.article.summaryHtml,
+      feed: {
+        id: Number(saved.article.feed.id),
+        title: saved.article.feed.title,
+        siteUrl: saved.article.feed.siteUrl
+      },
+      isRead: saved.article.reads.length > 0,
+      readAt: saved.article.reads[0]?.readAt || null,
+      isSaved: true,
+      savedAt: saved.savedAt
+    }));
+
+    res.json({ articles: formattedArticles });
+  } catch (error) {
+    logger.error('Error fetching saved articles:', error);
+    res.status(500).json({ error: 'Failed to fetch saved articles' });
+  }
+});
+
+/**
+ * POST /api/articles/:id/save - Save article for later
+ */
+router.post('/:id/save', requireAuth, async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id, 10);
+    if (Number.isNaN(articleId)) {
+      return res.status(400).json({ error: 'Invalid article id' });
+    }
+
+    const userId = (req as unknown as AuthenticatedRequest).userId;
+
+    // Verify article exists and user has access
+    const article = await prisma.article.findFirst({
+      where: {
+        id: BigInt(articleId),
+        feed: {
+          subscriptions: {
+            some: {
+              OR: [
+                { userId },
+                {
+                  team: {
+                    members: {
+                      some: { userId }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    });
+
+    if (!article) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    await prisma.savedArticle.upsert({
+      where: {
+        articleId_userId: {
+          articleId: BigInt(articleId),
+          userId
+        }
+      },
+      update: {},
+      create: {
+        articleId: BigInt(articleId),
+        userId
+      }
+    });
+
+    res.json({ message: 'Article saved', isSaved: true });
+  } catch (error) {
+    logger.error('Error saving article:', error);
+    res.status(500).json({ error: 'Failed to save article' });
+  }
+});
+
+/**
+ * DELETE /api/articles/:id/save - Remove article from saved
+ */
+router.delete('/:id/save', requireAuth, async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id, 10);
+    if (Number.isNaN(articleId)) {
+      return res.status(400).json({ error: 'Invalid article id' });
+    }
+
+    const userId = (req as unknown as AuthenticatedRequest).userId;
+
+    await prisma.savedArticle.deleteMany({
+      where: {
+        articleId: BigInt(articleId),
+        userId
+      }
+    });
+
+    res.json({ message: 'Article removed from saved', isSaved: false });
+  } catch (error) {
+    logger.error('Error removing saved article:', error);
+    res.status(500).json({ error: 'Failed to remove saved article' });
+  }
+});
+
+/**
  * POST /api/articles/:id/read - Mark single article as read
  */
 router.post('/:id/read', requireAuth, async (req, res) => {
@@ -333,7 +489,7 @@ router.post('/:id/read', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Invalid article id' });
     }
 
-    const userId = (req as AuthenticatedRequest).userId;
+    const userId = (req as unknown as AuthenticatedRequest).userId;
 
     const article = await prisma.article.findFirst({
       where: {
@@ -379,6 +535,113 @@ router.post('/:id/read', requireAuth, async (req, res) => {
   } catch (error) {
     logger.error('Error marking article as read:', error);
     res.status(500).json({ error: 'Failed to mark article as read' });
+  }
+});
+
+/**
+ * POST /api/articles/:id/fetch-content - Fetch full article content from source URL
+ */
+router.post('/:id/fetch-content', requireAuth, async (req, res) => {
+  try {
+    const articleId = parseInt(req.params.id, 10);
+    if (Number.isNaN(articleId)) {
+      return res.status(400).json({ error: 'Invalid article id' });
+    }
+
+    const userId = (req as unknown as AuthenticatedRequest).userId;
+
+    // Find article and verify access
+    const article = await prisma.article.findFirst({
+      where: {
+        id: BigInt(articleId),
+        feed: {
+          subscriptions: {
+            some: {
+              OR: [
+                { userId },
+                {
+                  team: {
+                    members: {
+                      some: { userId }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      include: {
+        feed: {
+          select: {
+            id: true,
+            title: true,
+            siteUrl: true
+          }
+        },
+        reads: {
+          where: { userId },
+          select: { readAt: true }
+        },
+        savedArticles: {
+          where: { userId },
+          select: { savedAt: true }
+        }
+      }
+    });
+
+    if (!article) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    if (!article.url) {
+      return res.status(400).json({ error: 'Article has no source URL' });
+    }
+
+    // Fetch full content from the article URL
+    logger.info(`Fetching full content for article ${articleId} from ${article.url}`);
+    const extracted = await feedService.fetchFullArticleContent(article.url);
+
+    if (!extracted || !extracted.content) {
+      return res.status(422).json({
+        error: 'Could not extract content from the article URL. The website may be blocking content extraction.',
+        suggestion: 'Try visiting the original article directly.'
+      });
+    }
+
+    // Update the article with full content
+    await prisma.article.update({
+      where: { id: BigInt(articleId) },
+      data: {
+        contentHtml: extracted.content,
+        summaryHtml: extracted.excerpt || article.summaryHtml
+      }
+    });
+
+    logger.info(`Successfully fetched full content for article ${articleId}`);
+
+    // Return updated article
+    res.json({
+      id: Number(article.id),
+      title: article.title,
+      url: article.url,
+      publishedAt: article.publishedAt,
+      author: article.author,
+      summary: extracted.excerpt || article.summaryHtml,
+      content: extracted.content,
+      feed: {
+        id: Number(article.feed.id),
+        title: article.feed.title,
+        siteUrl: article.feed.siteUrl
+      },
+      isRead: article.reads.length > 0,
+      readAt: article.reads[0]?.readAt || null,
+      isSaved: article.savedArticles.length > 0,
+      savedAt: article.savedArticles[0]?.savedAt || null
+    });
+  } catch (error) {
+    logger.error('Error fetching full article content:', error);
+    res.status(500).json({ error: 'Failed to fetch article content' });
   }
 });
 
