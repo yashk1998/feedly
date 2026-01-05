@@ -21,6 +21,9 @@ import toast from 'react-hot-toast'
 import { useApiClient } from '../lib/apiClient'
 import { useArticleNavigation } from '../hooks/useKeyboardShortcuts'
 import KeyboardShortcutsModal from '../components/KeyboardShortcutsModal'
+import { AllCaughtUpState, NoFeedsState, NoArticlesState } from '../components/EmptyStates'
+import FeedIcon from '../components/FeedIcon'
+import { ArticleCardSkeleton, SidebarSkeleton } from '../components/Skeleton'
 
 interface Article {
   id: number
@@ -43,6 +46,7 @@ interface Feed {
   id: number
   title?: string | null
   url: string
+  siteUrl?: string | null
   unreadCount: number
   category: string
 }
@@ -231,14 +235,16 @@ export default function Dashboard() {
                       onClick={() => setSelectedFeed(feed.id)}
                       className={`feed-item w-full ${selectedFeed === feed.id ? 'active' : ''}`}
                     >
-                      <div className="w-6 h-6 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="h-3.5 w-3.5 text-ink-400 dark:text-neutral-400" />
-                      </div>
+                      <FeedIcon
+                        url={feed.siteUrl || feed.url}
+                        title={feed.title}
+                        size="md"
+                      />
                       <span className="flex-1 text-left truncate text-sm">
                         {feed.title || new URL(feed.url).hostname}
                       </span>
                       {feed.unreadCount > 0 && (
-                        <span className="text-xs text-ink-400 dark:text-neutral-500">
+                        <span className="text-xs font-medium text-coral-600 dark:text-coral-400 bg-coral-50 dark:bg-coral-500/10 px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
                           {feed.unreadCount}
                         </span>
                       )}
@@ -315,42 +321,19 @@ export default function Dashboard() {
             {articlesLoading ? (
               <div className="space-y-4">
                 {[...Array(5)].map((_, i) => (
-                  <div key={i} className="card p-6">
-                    <div className="skeleton h-5 w-3/4 mb-3" />
-                    <div className="skeleton h-4 w-1/3 mb-4" />
-                    <div className="skeleton h-4 w-full mb-2" />
-                    <div className="skeleton h-4 w-2/3" />
-                  </div>
+                  <ArticleCardSkeleton key={i} index={i} />
                 ))}
               </div>
             ) : articles.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                  <Inbox className="h-8 w-8 text-ink-300 dark:text-neutral-600" />
-                </div>
-                <h3 className="font-display text-xl text-ink-900 dark:text-white mb-2">
-                  {showUnreadOnly ? 'All caught up!' : 'No articles yet'}
-                </h3>
-                <p className="text-ink-500 dark:text-neutral-400 mb-6 max-w-sm mx-auto">
-                  {showUnreadOnly
-                    ? "You've read all your articles. Check back later for new content."
-                    : 'Add some RSS feeds to start reading articles.'}
-                </p>
-                {!showUnreadOnly && (
-                  <Link to="/feeds" className="btn btn-primary">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Feed
-                  </Link>
+              <>
+                {showUnreadOnly ? (
+                  <AllCaughtUpState onViewAll={() => setShowUnreadOnly(false)} />
+                ) : feeds && feeds.length === 0 ? (
+                  <NoFeedsState />
+                ) : (
+                  <NoArticlesState />
                 )}
-                {showUnreadOnly && articles.length === 0 && (
-                  <button
-                    onClick={() => setShowUnreadOnly(false)}
-                    className="btn btn-secondary"
-                  >
-                    View all articles
-                  </button>
-                )}
-              </div>
+              </>
             ) : (
               <div className="space-y-3">
                 {articles.map((article, index) => (

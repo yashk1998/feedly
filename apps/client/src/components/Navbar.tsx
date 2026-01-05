@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/clerk-react'
+import { SignInButton, SignUpButton, useAuth } from '@clerk/clerk-react'
+import ProfileDropdown from './ProfileDropdown'
 import { Menu, X, Sun, Moon, ChevronRight } from 'lucide-react'
 
 // Custom Logo Component - Stylized "R" mark
@@ -131,14 +132,7 @@ export default function Navbar() {
             </button>
 
             {isSignedIn ? (
-              <UserButton
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: 'w-9 h-9 rounded-xl ring-2 ring-transparent hover:ring-coral-500/20 transition-all duration-200',
-                  },
-                }}
-              />
+              <ProfileDropdown />
             ) : (
               <div className="hidden md:flex items-center gap-2">
                 {/* Sign in - Subtle text link */}

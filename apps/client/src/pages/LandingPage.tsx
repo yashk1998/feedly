@@ -60,8 +60,8 @@ const previewData = {
     count: 5,
     articles: [
       { title: 'Startup Funding Trends in 2025', source: 'TechCrunch', time: '1h ago', saved: false },
-      { title: 'Remote Work: The New Normal', source: 'Forbes', time: '3h ago', saved: false },
-      { title: 'AI Tools Reshaping Productivity', source: 'HBR', time: '6h ago', saved: false }
+      { title: 'Remote Work: The New Normal', source: 'Fast Company', time: '3h ago', saved: false },
+      { title: 'AI Tools Reshaping Productivity', source: 'MIT Tech Review', time: '6h ago', saved: false }
     ]
   },
   saved: {

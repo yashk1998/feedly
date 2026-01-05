@@ -15,6 +15,8 @@ import toast from 'react-hot-toast'
 import { useApiClient } from '../lib/apiClient'
 import { useArticleNavigation } from '../hooks/useKeyboardShortcuts'
 import KeyboardShortcutsModal from '../components/KeyboardShortcutsModal'
+import { NoSavedState } from '../components/EmptyStates'
+import { ArticleCardSkeleton } from '../components/Skeleton'
 
 interface Article {
   id: number
@@ -158,33 +160,25 @@ export default function SavedArticles() {
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="card p-6">
-                <div className="skeleton h-5 w-3/4 mb-3" />
-                <div className="skeleton h-4 w-1/3 mb-4" />
-                <div className="skeleton h-4 w-full mb-2" />
-                <div className="skeleton h-4 w-2/3" />
-              </div>
+              <ArticleCardSkeleton key={i} index={i} />
             ))}
           </div>
         ) : filteredArticles.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-paper-100 dark:bg-ink-800 flex items-center justify-center">
-              <Bookmark className="h-8 w-8 text-ink-300" />
+          searchQuery ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+                <Search className="h-8 w-8 text-ink-300 dark:text-neutral-600" />
+              </div>
+              <h3 className="font-display text-xl text-ink-900 dark:text-white mb-2">
+                No matching articles
+              </h3>
+              <p className="text-ink-500 dark:text-neutral-400 mb-6 max-w-sm mx-auto">
+                Try a different search term.
+              </p>
             </div>
-            <h3 className="font-display text-xl text-ink-900 dark:text-paper-50 mb-2">
-              {searchQuery ? 'No matching articles' : 'No saved articles yet'}
-            </h3>
-            <p className="text-ink-500 mb-6 max-w-sm mx-auto">
-              {searchQuery
-                ? 'Try a different search term.'
-                : 'Save articles from your feed to read them later.'}
-            </p>
-            {!searchQuery && (
-              <Link to="/dashboard" className="btn btn-primary">
-                Browse Articles
-              </Link>
-            )}
-          </div>
+          ) : (
+            <NoSavedState />
+          )
         ) : (
           <div className="space-y-3">
             {filteredArticles.map((article, index) => (

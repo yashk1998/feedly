@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from 'react-query'
-import { Toaster } from 'react-hot-toast'
+import CustomToaster from './components/Toast'
 
 // Pages
 import LandingPage from './pages/LandingPage'
@@ -68,7 +68,7 @@ function App() {
               } />
             </Routes>
           </main>
-          <Toaster position="top-right" />
+          <CustomToaster />
         </div>
       </Router>
     </QueryClientProvider>

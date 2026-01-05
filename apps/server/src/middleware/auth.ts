@@ -1,34 +1,24 @@
 import type { Request, Response, NextFunction } from 'express';
+import { getAuth } from '@clerk/express';
 import { prisma } from '../index';
 import { logger } from '../index';
 import { syncClerkUser } from '../services/users';
 
-// Extend Express Request with Clerk auth
-interface ClerkAuthRequest extends Request {
-  auth?: {
-    userId?: string;
-    sessionId?: string;
-  };
-}
-
 export interface AuthenticatedRequest extends Request {
   userId: string;
   user?: any;
-  auth?: {
-    userId?: string;
-    sessionId?: string;
-  };
 }
 
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  const clerkReq = req as ClerkAuthRequest;
   const authReq = req as AuthenticatedRequest;
   try {
-    if (!clerkReq.auth || !clerkReq.auth.userId) {
+    const auth = getAuth(req);
+
+    if (!auth || !auth.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const userId = clerkReq.auth.userId;
+    const userId = auth.userId;
     authReq.userId = userId;
 
     const user = await syncClerkUser(userId);
@@ -50,11 +40,12 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
 };
 
 export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
-  const clerkReq = req as ClerkAuthRequest;
   const authReq = req as AuthenticatedRequest;
   try {
-    if (clerkReq.auth?.userId) {
-      const userId = clerkReq.auth.userId;
+    const auth = getAuth(req);
+
+    if (auth?.userId) {
+      const userId = auth.userId;
       authReq.userId = userId;
       const user = await prisma.user.findUnique({
         where: { id: userId }

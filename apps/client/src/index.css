@@ -267,39 +267,180 @@
     @apply bg-neutral-800;
   }
 
-  /* Prose */
+  /* Prose - Editorial Reading Experience */
   .prose-article {
     font-family: 'Newsreader', Georgia, serif;
-    @apply text-lg leading-relaxed text-ink-700;
+    @apply text-lg leading-[1.8] text-ink-700;
+    font-feature-settings: 'liga' 1, 'kern' 1;
+    -webkit-font-smoothing: antialiased;
   }
 
   .prose-article p {
-    @apply mb-6;
+    @apply mb-7;
   }
 
-  .prose-article h1, .prose-article h2, .prose-article h3 {
+  .prose-article h1 {
     font-family: 'Cal Sans', 'Inter', sans-serif;
-    @apply mt-10 mb-4 text-ink-900;
+    @apply text-3xl mt-12 mb-6 text-ink-900 leading-tight;
+  }
+
+  .prose-article h2 {
+    font-family: 'Cal Sans', 'Inter', sans-serif;
+    @apply text-2xl mt-10 mb-5 text-ink-900 leading-tight;
+  }
+
+  .prose-article h3 {
+    font-family: 'Cal Sans', 'Inter', sans-serif;
+    @apply text-xl mt-8 mb-4 text-ink-900 leading-snug;
+  }
+
+  .prose-article h4, .prose-article h5, .prose-article h6 {
+    font-family: 'Cal Sans', 'Inter', sans-serif;
+    @apply text-lg mt-6 mb-3 text-ink-900;
   }
 
   .prose-article a {
-    @apply text-coral-600 underline underline-offset-2;
+    @apply text-coral-600 underline decoration-coral-300 underline-offset-2 transition-colors;
+  }
+
+  .prose-article a:hover {
+    @apply text-coral-700 decoration-coral-500;
+  }
+
+  .prose-article strong, .prose-article b {
+    @apply font-semibold text-ink-800;
+  }
+
+  .prose-article em, .prose-article i {
+    @apply italic;
   }
 
   .prose-article blockquote {
-    @apply border-l-4 border-coral-500 pl-5 italic text-ink-600;
+    @apply my-8 pl-6 border-l-4 border-coral-400 bg-coral-50/50 py-4 pr-4 rounded-r-lg italic text-ink-600;
   }
 
+  .prose-article blockquote p {
+    @apply mb-0;
+  }
+
+  .prose-article ul, .prose-article ol {
+    @apply my-6 pl-6;
+  }
+
+  .prose-article ul {
+    @apply list-disc;
+  }
+
+  .prose-article ol {
+    @apply list-decimal;
+  }
+
+  .prose-article li {
+    @apply mb-3 pl-2;
+  }
+
+  .prose-article li::marker {
+    @apply text-coral-500;
+  }
+
+  .prose-article code {
+    @apply font-mono text-base bg-neutral-100 text-coral-600 px-1.5 py-0.5 rounded;
+  }
+
+  .prose-article pre {
+    @apply my-8 p-5 bg-neutral-900 text-neutral-100 rounded-xl overflow-x-auto;
+  }
+
+  .prose-article pre code {
+    @apply bg-transparent text-neutral-100 p-0;
+  }
+
+  .prose-article img {
+    @apply my-8 rounded-xl shadow-lg w-full;
+  }
+
+  .prose-article figure {
+    @apply my-8;
+  }
+
+  .prose-article figcaption {
+    @apply text-center text-sm text-ink-500 mt-3 italic;
+  }
+
+  .prose-article hr {
+    @apply my-10 border-neutral-200;
+  }
+
+  .prose-article table {
+    @apply my-8 w-full text-base;
+  }
+
+  .prose-article th {
+    @apply text-left font-semibold text-ink-800 pb-3 border-b-2 border-neutral-200;
+  }
+
+  .prose-article td {
+    @apply py-3 border-b border-neutral-100;
+  }
+
+  .prose-article video, .prose-article iframe {
+    @apply my-8 rounded-xl w-full aspect-video;
+  }
+
+  /* First paragraph - drop cap effect (optional) */
+  .prose-article > p:first-of-type::first-letter {
+    @apply text-5xl font-display float-left mr-3 mt-1 text-coral-500;
+    line-height: 0.8;
+  }
+
+  /* Dark mode */
   .dark .prose-article {
-    @apply text-neutral-200;
+    @apply text-neutral-300;
   }
 
-  .dark .prose-article h1, .dark .prose-article h2, .dark .prose-article h3 {
+  .dark .prose-article h1, .dark .prose-article h2, .dark .prose-article h3,
+  .dark .prose-article h4, .dark .prose-article h5, .dark .prose-article h6 {
+    @apply text-white;
+  }
+
+  .dark .prose-article strong, .dark .prose-article b {
     @apply text-white;
   }
 
   .dark .prose-article a {
-    @apply text-coral-400;
+    @apply text-coral-400 decoration-coral-600;
+  }
+
+  .dark .prose-article a:hover {
+    @apply text-coral-300 decoration-coral-400;
+  }
+
+  .dark .prose-article blockquote {
+    @apply border-coral-500 bg-coral-900/20 text-neutral-300;
+  }
+
+  .dark .prose-article code {
+    @apply bg-neutral-800 text-coral-400;
+  }
+
+  .dark .prose-article pre {
+    @apply bg-neutral-950;
+  }
+
+  .dark .prose-article figcaption {
+    @apply text-neutral-400;
+  }
+
+  .dark .prose-article hr {
+    @apply border-neutral-800;
+  }
+
+  .dark .prose-article th {
+    @apply text-white border-neutral-700;
+  }
+
+  .dark .prose-article td {
+    @apply border-neutral-800;
   }
 
   /* Text gradient */
