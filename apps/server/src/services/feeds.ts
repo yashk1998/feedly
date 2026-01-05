@@ -62,7 +62,7 @@ function cleanHtmlContent(html: string): string {
   if (!html) return '';
 
   // Remove script and style tags
-  let cleaned = html
+  const cleaned = html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
     .replace(/<!--[\s\S]*?-->/g, '');
