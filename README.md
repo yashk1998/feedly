@@ -1,139 +1,115 @@
-# 🌱 rivsy RSS SaaS
+# Syncd
 
-> AI-powered RSS feed reader with team collaboration, social media integration, and intelligent content curation.
+> AI-powered RSS feed reader with smart ranking, topic clustering, and team collaboration.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-pgvector-336791)](https://www.postgresql.org/)
 
-## 🚀 Features
+## Features
 
-### 📰 Core RSS Features
-- **Smart Feed Aggregation**: Automatically parse RSS/Atom feeds and regular websites
-- **Real-time Updates**: Configurable refresh intervals (1-hour to 6-hour based on plan)
-- **Content Deduplication**: Global article deduplication using content checksums
-- **Category Management**: Organize feeds by categories for better content discovery
+### Core RSS
+- **Feed Aggregation** — parse RSS/Atom feeds and scrape regular websites via `@mozilla/readability`
+- **Auto-refresh** — configurable per-feed TTL with adaptive scheduling based on posting frequency
+- **Deduplication** — SHA-256 content checksums prevent duplicate articles
+- **OPML Import/Export** — bring your feeds from any reader
+- **Feed Directory** — discover curated feeds by category
 
-### 🤖 AI-Powered Intelligence
-- **Article Summarization**: Get instant AI-generated summaries powered by Azure OpenAI
-- **Social Media Posts**: Auto-generate platform-specific posts for Twitter, LinkedIn, Reddit
-- **Keyword Extraction**: Identify key topics and themes in articles
-- **Sentiment Analysis**: Understand the emotional tone of content
+### AI Intelligence
+- **Multi-provider AI** — Azure OpenAI, AWS Bedrock, Google Gemini, OpenAI (automatic fallback)
+- **BYOK** — bring your own API keys for OpenAI, Anthropic, Google, or Groq
+- **Article Summarization** — instant AI summaries with per-user caching
+- **Social Post Generation** — platform-specific posts for Twitter, LinkedIn, Reddit
+- **Keyword Extraction & Sentiment Analysis**
+- **Translation** — translate articles into 12 languages
+- **Daily Digest** — AI-generated summary of your unread articles
+- **Smart Ranking** — interest-vector ranking via pgvector embeddings
+- **Topic Clustering** — automatic grouping of related articles
 
-### 👥 Team Collaboration
-- **Multi-user Teams**: Share feeds and insights with team members
-- **Role-based Access**: Owner, Editor, and Viewer roles with appropriate permissions
-- **Slack Integration**: Send article summaries and updates to Slack channels
-- **Shared Categories**: Collaborative content organization
+### Feed Automation
+- **Silence** — auto-mark articles as read
+- **Notify** — keyword-based alerts with optional webhook
+- **Auto-tag** — apply tags to incoming articles
+- **Webhook** — forward article payloads to external URLs
+- **Translate** — flag articles for on-demand translation
 
-### 💳 Flexible Pricing
-- **Freemium Model**: Free tier with 5 AI credits/month
-- **Pro Plan**: ₹299/month - 150 credits, 3 team members, social posting
-- **Power Plan**: ₹599/month - 150 credits, 10 team members, all features
-- **Credit System**: Transparent usage tracking with soft/hard limits
+### Search
+- **Operator Syntax** — `intitle:`, `author:`, `feed:`, `before:`, `after:`, `is:read`, `is:unread`, `is:saved`
+- **Saved Searches** — pin frequent searches, export as RSS feeds with HMAC tokens
+- **Command Palette** — `Cmd+K` for instant navigation and search
 
-### 🔧 Technical Excellence
-- **Modern Stack**: React 18, Node.js, TypeScript, MySQL, Redis
-- **Authentication**: Clerk integration for secure user management
-- **Payments**: Razorpay integration for Indian market
-- **Analytics**: PostHog integration for user behavior tracking
-- **API-First**: RESTful APIs with comprehensive documentation
+### Team Collaboration
+- **Multi-user Teams** — share feeds with team members
+- **Role-based Access** — Owner, Editor, Viewer permissions
+- **Slack Integration** — send updates to Slack channels
 
-## 🏗️ Architecture
+### Payments
+- **Razorpay Integration** — subscription billing for Indian market
+- **Credit System** — transparent AI usage tracking with plan-based limits
 
-```
-rivsy/
-├── apps/
-│   ├── server/          # Node.js/Express backend
-│   └── client/          # React/Vite frontend
-├── packages/            # Shared packages (future)
-├── prisma/             # Database schema and migrations
-└── docs/               # Documentation
-```
+| Plan | Price | AI Credits/mo | Team Members |
+|------|-------|---------------|--------------|
+| Free | ₹0 | 5 | 1 |
+| Pro | ₹299/mo | 150 | 3 |
+| Power | ₹599/mo | 150 | 10 |
 
-### Tech Stack
+## Tech Stack
 
-**Backend:**
-- Node.js + Express.js
-- TypeScript
-- Prisma ORM + MySQL
-- Redis for caching
-- Azure OpenAI for AI features
-- Clerk for authentication
-- Razorpay for payments
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 15 (App Router, standalone output) |
+| UI | React 19, Tailwind CSS v4, Framer Motion, Lucide React |
+| API | Hono v4 (mounted at `/api/[...route]`) |
+| Auth | NextAuth v5 (Google, GitHub, Credentials) |
+| Database | PostgreSQL + pgvector |
+| ORM | Prisma 6 |
+| Cache | Redis |
+| AI | Azure OpenAI / AWS Bedrock / Google Gemini / OpenAI |
+| Payments | Razorpay |
+| Logging | Winston |
+| Validation | Zod |
 
-**Frontend:**
-- React 18 + TypeScript
-- Vite for build tooling
-- Tailwind CSS for styling
-- React Query for data fetching
-- Clerk for authentication
-- Framer Motion for animations
-
-**Infrastructure:**
-- Azure VM for hosting
-- MySQL database
-- Redis cache
-- PostHog for analytics
-- Papercups for support
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ 
-- MySQL 8.0+
+- Node.js 20+
+- PostgreSQL 15+ with [pgvector](https://github.com/pgvector/pgvector) extension
 - Redis 6+
-- npm or yarn
 
 ### 1. Clone and Install
 
 ```bash
 git clone <repository-url>
-cd rivsy
-npm run install:all
+cd syncd
+npm install
 ```
 
 ### 2. Environment Setup
 
-**Backend (.env):**
 ```bash
-cd apps/server
-cp env.example .env
+cp .env.example .env
 ```
 
-Edit `apps/server/.env` with your configuration:
+Edit `.env` with your configuration. See `.env.example` for all available variables:
+
 ```env
-# Database
-DATABASE_URL="mysql://user:password@localhost:3306/rivsy"
-REDIS_URL="redis://localhost:6379"
+# Required
+DATABASE_URL=postgresql://user:password@localhost:5432/syncd
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-here
+REDIS_URL=redis://localhost:6379
 
-# Authentication
-CLERK_SECRET_KEY="sk_test_..."
-CLERK_WEBHOOK_SECRET="whsec_..."
+# OAuth (at least one provider)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
 
-# AI Services
-AZURE_OPENAI_API_KEY="your_azure_openai_key"
-AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com/"
-
-# Payments
-RAZORPAY_KEY_ID="rzp_test_..."
-RAZORPAY_KEY_SECRET="your_secret"
-
-# Analytics
-POSTHOG_API_KEY="phc_..."
-```
-
-**Frontend (.env.local):**
-```bash
-cd apps/client
-cp env.example .env.local
-```
-
-Edit `apps/client/.env.local`:
-```env
-VITE_CLERK_PUBLISHABLE_KEY="pk_test_..."
+# AI (at least one provider)
+AZURE_OPENAI_API_KEY=
+AZURE_OPENAI_ENDPOINT=
 ```
 
 ### 3. Database Setup
@@ -152,176 +128,130 @@ npm run db:studio
 ### 4. Start Development
 
 ```bash
-# Start both frontend and backend
 npm run dev
-
-# Or start individually
-npm run dev:server  # Backend on :3001
-npm run dev:client  # Frontend on :3000
 ```
 
-Visit `http://localhost:3000` to see the application!
+Visit `http://localhost:3000`.
 
-## 📚 Documentation
+## Project Structure
 
-### API Documentation
+```
+syncd/
+├── src/
+│   ├── app/
+│   │   ├── (app)/                    # Authenticated routes
+│   │   │   ├── dashboard/            # Main feed reader
+│   │   │   ├── feeds/                # Feed management + discovery
+│   │   │   ├── article/[id]/         # Article reader
+│   │   │   ├── saved/                # Saved articles
+│   │   │   ├── digest/               # AI daily digest
+│   │   │   ├── pricing/              # Plans & pricing
+│   │   │   └── settings/             # User settings (5 tabs)
+│   │   ├── (auth)/                   # Sign-in / sign-up
+│   │   ├── api/
+│   │   │   ├── [...route]/           # Hono catch-all
+│   │   │   ├── auth/[...nextauth]/   # NextAuth
+│   │   │   └── cron/sync-feeds/      # Cron endpoint
+│   │   └── providers.tsx             # Session + QueryClient + Toaster
+│   ├── components/
+│   │   ├── layout/                   # Navbar, Footer
+│   │   └── ui/                       # Command palette, skeletons, etc.
+│   ├── hooks/                        # Keyboard shortcuts
+│   ├── lib/                          # Auth, Prisma, Redis, logger, search parser
+│   ├── server/
+│   │   ├── hono.ts                   # Hono app + route mounting
+│   │   ├── middleware/               # Auth middleware
+│   │   ├── routes/                   # API route handlers
+│   │   └── services/                 # Business logic
+│   └── types/                        # TypeScript definitions
+├── prisma/schema.prisma              # 21 models, pgvector
+├── deploy/                           # deploy.sh, vm-setup.sh
+├── Dockerfile                        # 3-stage Node 20 Alpine build
+├── middleware.ts                      # NextAuth route protection
+└── package.json
+```
 
-The backend provides a comprehensive REST API. Key endpoints:
+## API Overview
 
-- **Feeds**: `/api/feeds` - CRUD operations for RSS feeds
-- **Articles**: `/api/articles` - Article retrieval and management
-- **AI**: `/api/ai/*` - AI-powered features (summarization, social posts)
-- **Teams**: `/api/teams` - Team management and collaboration
-- **Payments**: `/api/payments` - Subscription and billing
+All API routes are served via Hono at `/api/*`. See the [Postman collection](feedly_postman_collection.json) for complete request/response examples.
 
-See [Backend README](apps/server/README.md) for detailed API documentation.
+| Group | Base Path | Key Endpoints |
+|-------|-----------|---------------|
+| Auth | `/api/auth` | Register |
+| Feeds | `/api/feeds` | CRUD, refresh, OPML import/export, discover |
+| Articles | `/api/articles` | List, read/unread, save/unsave, fetch content, bulk mark read |
+| AI | `/api/ai` | Summarize, social post, keywords, sentiment, translate, digest, credits |
+| Tags | `/api/tags` | CRUD, tag/untag articles, articles by tag |
+| Saved Searches | `/api/saved-searches` | CRUD, RSS export with HMAC |
+| Clusters | `/api/clusters` | Topic clusters, similar articles |
+| Actions | `/api/actions` | Feed automation rules |
+| API Keys | `/api/api-keys` | BYOK key management |
+| Teams | `/api/teams` | Team CRUD, members |
+| Payments | `/api/payments` | Subscribe, cancel, webhook |
+| Admin | `/api/admin` | System stats, user management |
+| Analytics | `/api/analytics` | Dashboard KPIs, reading analytics |
+| Health | `/api/health` | Server health check |
 
-### Frontend Documentation
+## Keyboard Shortcuts
 
-The React frontend provides a modern, responsive interface:
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Next article |
+| `k` / `↑` | Previous article |
+| `o` / `Enter` | Open article |
+| `m` / `Space` | Toggle read/unread |
+| `s` | Save/unsave article |
+| `?` | Keyboard shortcuts help |
+| `Cmd+K` | Command palette |
 
-- **Dashboard**: Main article feed with filtering and search
-- **Feed Management**: Add and manage RSS subscriptions
-- **Article Reader**: Clean reading interface with AI features
-- **Settings**: User preferences and account management
+## Deployment
 
-See [Frontend README](apps/client/README.md) for component documentation.
-
-## 🧪 Testing
-
-### Postman Collection
-
-Import the provided Postman collection to test all API endpoints:
+### Docker
 
 ```bash
-# Import rivsy_API.postman_collection.json into Postman
-# Set environment variables:
-# - base_url: http://localhost:3001
-# - clerk_session_token: (get from browser dev tools)
+docker build -t syncd .
+docker run -p 3000:3000 --env-file .env syncd
 ```
 
-### Manual Testing
+### VM Deployment
 
-1. **Create Account**: Sign up at `http://localhost:3000`
-2. **Add Feeds**: Try popular feeds like TechCrunch, Hacker News
-3. **Test AI Features**: Generate summaries and social posts
-4. **Team Features**: Create a team and invite members (Pro plan)
+```bash
+# First-time VM setup (Ubuntu 22.04+)
+bash deploy/vm-setup.sh
 
-## 🚀 Deployment
+# Deploy updates
+bash deploy/deploy.sh
+```
+
+The deploy script builds locally, transfers the standalone output via SCP, runs migrations, and restarts the systemd service.
 
 ### Production Build
 
 ```bash
-# Build both applications
 npm run build
-
-# Start production server
 npm start
 ```
 
-### Environment Variables
+## Scripts
 
-Ensure all production environment variables are set:
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run lint:fix` | Fix lint errors |
+| `npm run typecheck` | TypeScript type checking |
+| `npm run check` | Lint + typecheck |
+| `npm run db:generate` | Generate Prisma client |
+| `npm run db:migrate` | Run database migrations |
+| `npm run db:push` | Push schema to database |
+| `npm run db:studio` | Open Prisma Studio |
 
-- Database connection strings
-- API keys for external services
-- Webhook URLs for payments
-- CORS origins for frontend
+## Architecture
 
-### Azure VM Deployment
+See [architecture.md](architecture.md) for detailed system architecture documentation.
 
-1. **Setup VM**: Ubuntu 20.04+ with Node.js, MySQL, Redis
-2. **Clone Repository**: Deploy code to `/opt/rivsy`
-3. **Install Dependencies**: Run `npm run install:all`
-4. **Database Migration**: Run `npm run db:migrate`
-5. **Process Manager**: Use PM2 for process management
-6. **Reverse Proxy**: Configure Nginx for SSL and routing
-7. **Monitoring**: Setup logging and health checks
+## License
 
-## 🔧 Development
-
-### Code Style
-
-- **TypeScript**: Strict mode enabled
-- **ESLint**: Airbnb configuration with React rules
-- **Prettier**: Automatic code formatting
-- **Husky**: Pre-commit hooks for quality
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-### Project Structure
-
-```
-rivsy/
-├── apps/
-│   ├── server/                 # Backend application
-│   │   ├── src/
-│   │   │   ├── routes/         # API route handlers
-│   │   │   ├── services/       # Business logic
-│   │   │   ├── middleware/     # Express middleware
-│   │   │   └── utils/          # Utility functions
-│   │   ├── prisma/            # Database schema
-│   │   └── package.json
-│   └── client/                # Frontend application
-│       ├── src/
-│       │   ├── components/     # React components
-│       │   ├── pages/          # Page components
-│       │   ├── hooks/          # Custom hooks
-│       │   └── utils/          # Utility functions
-│       └── package.json
-├── docs/                      # Project documentation
-├── rivsy_API.postman_collection.json
-└── package.json              # Root package.json
-```
-
-## 📊 Features Roadmap
-
-### MVP (Current)
-- ✅ RSS feed aggregation
-- ✅ AI article summaries
-- ✅ User authentication
-- ✅ Basic team features
-- ✅ Razorpay integration
-
-### Phase 2
-- [ ] Mobile app (React Native)
-- [ ] Advanced analytics dashboard
-- [ ] Email digest automation
-- [ ] Browser extension
-- [ ] OPML import/export
-
-### Phase 3
-- [ ] Self-hosted option
-- [ ] Advanced AI features (translation, categorization)
-- [ ] Integration marketplace
-- [ ] White-label solutions
-- [ ] Enterprise SSO
-
-## 🤝 Support
-
-- **Documentation**: Check the READMEs in each app directory
-- **Issues**: Create GitHub issues for bugs and feature requests
-- **Discussions**: Use GitHub Discussions for questions
-- **Email**: Contact team for enterprise inquiries
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **RSS Parsing**: feedparser for robust RSS/Atom parsing
-- **AI Services**: Azure OpenAI for intelligent content processing
-- **Authentication**: Clerk for seamless user management
-- **UI Components**: Tailwind CSS and Lucide React for beautiful interfaces
-- **Database**: Prisma for type-safe database operations
-
----
-
-**Built with ❤️ for the modern content consumer** 
+MIT
